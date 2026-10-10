@@ -5,7 +5,6 @@ import {
   Plus, PanelLeftClose, PanelLeftOpen, Copy, Check, Zap, Cpu
 } from "lucide-react";
 import ArcWave from "./components/ArcWave";
-import RotatingSuitPlatform from "./components/RotatingSuitPlatform";
 import { askJarvis } from "./services/gemini";
 
 export default function App() {
@@ -526,11 +525,8 @@ export default function App() {
           </div>
         </header>
 
-        {/* WORKSPACE BODY WITH ROTATING IRON MAN MARK IV SUIT ON CARRIER PAD */}
-        <div className="relative flex min-h-0 flex-1 overflow-hidden">
-          {/* ROTATING SUIT BACKGROUND */}
-          <RotatingSuitPlatform state={status} audioLevel={audioLevel} />
-
+        {/* WORKSPACE BODY WITH BACKGROUND COLOR */}
+        <div className="relative flex min-h-0 flex-1 overflow-hidden bg-[#0a0305]">
           {/* CHAT MESSAGES STREAM */}
           <div className="relative z-10 flex flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-12 max-w-4xl mx-auto w-full space-y-6">
             {messages.map((msg) => (
