@@ -24,17 +24,17 @@ export default function JarvisArcFace({ state = "idle", audioLevel = 0 }) {
       const isListening = state === "listening";
       const isThinking = state === "thinking";
 
-      // Color Theme
-      const primaryCyan = isListening ? "#ff3355" : isThinking ? "#a855f7" : "#00f3ff";
-      const secondaryCyan = isListening ? "#ff6b8b" : isThinking ? "#c084fc" : "#38bdf8";
-      const coreGold = "#ffe885";
+      // Stark Iron Man Palette: Hot Gold, Crimson, Arc White
+      const primaryGold = isListening ? "#ff3355" : isThinking ? "#ff8800" : "#ffc300";
+      const crimsonStark = isListening ? "#d00000" : isThinking ? "#e85d04" : "#e63946";
+      const arcGlow = isListening ? "rgba(255, 51, 85, 0.6)" : isThinking ? "rgba(255, 136, 0, 0.6)" : "rgba(255, 195, 0, 0.6)";
 
       const dynamicGain = (isSpeaking ? 0.35 : isListening ? audioLevel * 0.8 : isThinking ? 0.2 : 0.05);
 
-      // --- 1. AMBIENT BACKDROP GLOW ---
+      // --- 1. AMBIENT BACKDROP GLOW (Crimson & Gold Halos) ---
       const bgGrad = ctx.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * 1.3);
-      bgGrad.addColorStop(0, isListening ? "rgba(255, 51, 85, 0.25)" : "rgba(0, 243, 255, 0.2)");
-      bgGrad.addColorStop(0.6, "rgba(0, 180, 255, 0.05)");
+      bgGrad.addColorStop(0, "rgba(255, 195, 0, 0.25)");
+      bgGrad.addColorStop(0.5, "rgba(230, 57, 70, 0.1)");
       bgGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
       ctx.fillStyle = bgGrad;
       ctx.beginPath();
@@ -45,9 +45,9 @@ export default function JarvisArcFace({ state = "idle", audioLevel = 0 }) {
       ctx.save();
       ctx.translate(cx, cy);
 
-      // Outer compass ticks ring
+      // Outer compass ticks ring in Stark Gold
       ctx.rotate(t * 0.005);
-      ctx.strokeStyle = "rgba(0, 243, 255, 0.25)";
+      ctx.strokeStyle = "rgba(255, 195, 0, 0.3)";
       ctx.lineWidth = 1 * dpr;
       ctx.beginPath();
       ctx.arc(0, 0, R * 1.15, 0, Math.PI * 2);
@@ -62,11 +62,11 @@ export default function JarvisArcFace({ state = "idle", audioLevel = 0 }) {
         ctx.beginPath();
         ctx.moveTo(Math.cos(angle) * r1, Math.sin(angle) * r1);
         ctx.lineTo(Math.cos(angle) * r2, Math.sin(angle) * r2);
-        ctx.strokeStyle = i % 5 === 0 ? primaryCyan : "rgba(0, 243, 255, 0.3)";
+        ctx.strokeStyle = i % 5 === 0 ? primaryGold : "rgba(230, 57, 70, 0.4)";
         ctx.stroke();
       }
 
-      // Segmented Arc Reactor Outer Housing (Stark Industries Mark VI)
+      // Segmented Arc Reactor Outer Housing (Mark VII Titanium Alloy Style)
       ctx.rotate(-t * 0.015);
       const segments = 10;
       const segAngle = (Math.PI * 2) / segments;
@@ -75,19 +75,19 @@ export default function JarvisArcFace({ state = "idle", audioLevel = 0 }) {
         const endA = (i + 1) * segAngle - 0.08;
         ctx.beginPath();
         ctx.arc(0, 0, R * 0.98, startA, endA);
-        ctx.strokeStyle = primaryCyan;
+        ctx.strokeStyle = primaryGold;
         ctx.lineWidth = 3.5 * dpr;
-        ctx.shadowColor = primaryCyan;
+        ctx.shadowColor = arcGlow;
         ctx.shadowBlur = 12 * dpr;
         ctx.stroke();
       }
 
-      // Middle Counter-Spinning Triangular Energy Ring
+      // Middle Counter-Spinning Crimson Ring
       ctx.rotate(t * 0.025);
       ctx.setLineDash([18 * dpr, 28 * dpr]);
       ctx.beginPath();
       ctx.arc(0, 0, R * 0.82, 0, Math.PI * 2);
-      ctx.strokeStyle = secondaryCyan;
+      ctx.strokeStyle = crimsonStark;
       ctx.lineWidth = 2 * dpr;
       ctx.shadowBlur = 8 * dpr;
       ctx.stroke();
@@ -95,23 +95,21 @@ export default function JarvisArcFace({ state = "idle", audioLevel = 0 }) {
 
       ctx.restore();
 
-      // --- 3. DYNAMIC 3D HOLOGRAPHIC SPHERE / NEURAL MATRIX (The Face Core) ---
+      // --- 3. DYNAMIC 3D HOLOGRAPHIC GOLD SPHERE ---
       ctx.save();
       ctx.translate(cx, cy);
 
       const latLines = 8;
       const sphereR = R * 0.65;
       for (let i = 0; i < latLines; i++) {
-        const latNorm = (i / (latLines - 1)) * 2 - 1; // -1 to 1
+        const latNorm = (i / (latLines - 1)) * 2 - 1;
         const rLat = sphereR * Math.sqrt(Math.max(0, 1 - latNorm * latNorm));
         const yLat = latNorm * sphereR;
-
-        // Wave displacement on speaking
         const pulse = Math.sin(t * 0.1 + i) * (dynamicGain * 14 * dpr);
 
         ctx.beginPath();
         ctx.ellipse(0, yLat, Math.max(0.1, rLat + pulse), Math.max(0.1, rLat * 0.28 + pulse * 0.3), 0, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(0, 243, 255, ${0.2 + (1 - Math.abs(latNorm)) * 0.5})`;
+        ctx.strokeStyle = `rgba(255, 195, 0, ${0.2 + (1 - Math.abs(latNorm)) * 0.5})`;
         ctx.lineWidth = (1 + (1 - Math.abs(latNorm))) * dpr;
         ctx.stroke();
       }
@@ -123,29 +121,29 @@ export default function JarvisArcFace({ state = "idle", audioLevel = 0 }) {
         const xStretch = Math.cos(longA) * sphereR;
         ctx.beginPath();
         ctx.ellipse(0, 0, Math.abs(xStretch), sphereR, 0, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
+        ctx.strokeStyle = "rgba(230, 57, 70, 0.35)";
         ctx.lineWidth = 1 * dpr;
         ctx.stroke();
       }
 
-      // --- 4. ARC REACTOR CENTRAL CORE (PULSING PURE WHITE-BLUE LIGHT) ---
+      // --- 4. ARC REACTOR CENTRAL CORE (PULSING GOLD-WHITE HOT ARC) ---
       const corePulse = (1 + dynamicGain * 1.5) * (1 + 0.08 * Math.sin(t * 0.1));
       const coreRad = R * 0.24 * corePulse;
 
       const coreGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, coreRad * 1.6);
       coreGrad.addColorStop(0, "#ffffff");
-      coreGrad.addColorStop(0.3, coreGold);
-      coreGrad.addColorStop(0.65, primaryCyan);
-      coreGrad.addColorStop(1, "rgba(0, 243, 255, 0)");
+      coreGrad.addColorStop(0.35, "#ffea00");
+      coreGrad.addColorStop(0.7, "#ff5400");
+      coreGrad.addColorStop(1, "rgba(208, 0, 0, 0)");
 
       ctx.fillStyle = coreGrad;
-      ctx.shadowColor = primaryCyan;
+      ctx.shadowColor = primaryGold;
       ctx.shadowBlur = 35 * dpr;
       ctx.beginPath();
       ctx.arc(0, 0, coreRad, 0, Math.PI * 2);
       ctx.fill();
 
-      // Sharp inner reactor aperture triangle
+      // Inner Arc Reactor Triangular Aperture
       ctx.beginPath();
       for (let k = 0; k < 3; k++) {
         const triAngle = (k * Math.PI * 2) / 3 - Math.PI / 2 + t * 0.01;
@@ -156,7 +154,7 @@ export default function JarvisArcFace({ state = "idle", audioLevel = 0 }) {
         else ctx.lineTo(tx, ty);
       }
       ctx.closePath();
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
       ctx.lineWidth = 2 * dpr;
       ctx.stroke();
 

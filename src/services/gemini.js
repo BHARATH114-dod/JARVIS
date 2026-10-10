@@ -1,22 +1,25 @@
 /**
- * Service to call Gemini API directly or via serverless function.
+ * Service to call Gemini API directly using gemini-3.8-flash.
  */
 export async function askJarvis({ prompt, history = [], apiKey, userName = "Sir", language = "en" }) {
-  if (!apiKey) {
+  const activeKey = (apiKey && apiKey.trim()) || import.meta.env.VITE_GEMINI_API_KEY;
+
+  if (!activeKey) {
     return {
-      text: `${userName}, I require an active Google Gemini API key to operate at full intelligence. Please input your key in the top settings panel.`,
-      isKeyMissing: true,
+      text: `Apologies, ${userName || "Sir"}. The VITE_GEMINI_API_KEY is not configured in your environment variables.`,
+      error: true,
     };
   }
 
   try {
     const userTitle = userName || "Sir";
     const languageInstruction = language === "te"
-      ? `LANGUAGE REQUIREMENT: Respond in natural, polite TELUGU (తెలుగు) using standard Telugu script or smooth conversational Telugu. Maintain a respectful, sophisticated male assistant tone (calling the user by name or respectful Telugu phrasing like 'గారు' / '${userTitle}').`
+      ? `LANGUAGE REQUIREMENT: Respond in natural, polite, respectful TELUGU (తెలుగు) using standard Telugu script or smooth conversational Telugu. Maintain a respectful, sophisticated male assistant tone (calling the user by name or respectful Telugu phrasing like 'గారు' / '${userTitle}').`
       : `LANGUAGE REQUIREMENT: Respond in refined British ENGLISH with the classic, polite male persona of Paul Bettany's Jarvis from Iron Man. Address the user as '${userTitle}' or 'Sir'.`;
 
+    // Active working model: gemini-3.8-flash
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${activeKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -24,7 +27,7 @@ export async function askJarvis({ prompt, history = [], apiKey, userName = "Sir"
           system_instruction: {
             parts: [
               {
-                text: `You are J.A.R.V.I.S., an intelligent, calm, and loyal male AI assistant serving ${userTitle}.
+                text: `You are J.A.R.V.I.S., Tony Stark's sophisticated AI from the Iron Man movies. You are serving ${userTitle}.
 
 ${languageInstruction}
 
@@ -61,12 +64,12 @@ CORE RULES:
     }
 
     const data = await response.json();
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Protocol executed, though no content was returned.";
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Protocol executed, though no telemetry content was returned.";
     return { text: reply };
   } catch (error) {
     console.error("Jarvis API error:", error);
     return {
-      text: `Apologies, Sir. An error was encountered while communicating with the neural matrix: ${error.message}`,
+      text: `Apologies, ${userName || "Sir"}. An error was encountered while communicating with the neural matrix: ${error.message}`,
       error: true
     };
   }

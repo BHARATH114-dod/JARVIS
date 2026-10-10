@@ -11,21 +11,20 @@ export default function ArcWave({ state = "idle", audioLevel = 0 }) {
     let phase = 0;
 
     const render = () => {
-      // Resize dynamically
       const width = (canvas.width = canvas.offsetWidth * window.devicePixelRatio);
       const height = (canvas.height = canvas.offsetHeight * window.devicePixelRatio);
       ctx.clearRect(0, 0, width, height);
 
       const centerY = height / 2;
-      const baseAmp = state === "speaking" ? 48 : state === "listening" ? 36 : state === "thinking" ? 22 : 10;
-      const dynamicAmp = baseAmp + (audioLevel * 70);
+      const baseAmp = state === "speaking" ? 36 : state === "listening" ? 30 : state === "thinking" ? 18 : 8;
+      const dynamicAmp = baseAmp + (audioLevel * 60);
 
-      // Draw multiple glowing harmonic sine waves
+      // Iron Man Stark Gold & Crimson Harmonic Sine Waves
       const waveConfigs = [
-        { color: "rgba(0, 243, 255, 0.85)", speed: 0.05, freq: 0.007, blur: 18, width: 3.5, offset: 0 },
-        { color: "rgba(0, 180, 255, 0.55)", speed: 0.035, freq: 0.012, blur: 12, width: 2, offset: 2 },
-        { color: "rgba(168, 85, 247, 0.7)", speed: -0.04, freq: 0.009, blur: 14, width: 2.5, offset: 4 },
-        { color: "rgba(56, 189, 248, 0.4)", speed: 0.065, freq: 0.015, blur: 8, width: 1.5, offset: 1 },
+        { color: "rgba(255, 195, 0, 0.9)", speed: 0.05, freq: 0.007, blur: 16, width: 3, offset: 0 },
+        { color: "rgba(230, 57, 70, 0.7)", speed: 0.035, freq: 0.012, blur: 12, width: 2, offset: 2 },
+        { color: "rgba(255, 214, 10, 0.65)", speed: -0.04, freq: 0.009, blur: 14, width: 2.2, offset: 4 },
+        { color: "rgba(208, 0, 0, 0.45)", speed: 0.065, freq: 0.015, blur: 8, width: 1.5, offset: 1 },
       ];
 
       waveConfigs.forEach((cfg) => {
@@ -37,9 +36,8 @@ export default function ArcWave({ state = "idle", audioLevel = 0 }) {
         ctx.shadowBlur = cfg.blur;
 
         for (let x = 0; x < width; x += 4) {
-          // Envelope calculation to taper the wave at both edges
           const normX = x / width;
-          const envelope = Math.sin(normX * Math.PI); // 0 at left/right edges, 1 at center
+          const envelope = Math.sin(normX * Math.PI);
 
           const y = centerY +
             Math.sin(x * cfg.freq + phase * (cfg.speed > 0 ? 1 : -1) + cfg.offset) *
@@ -47,31 +45,28 @@ export default function ArcWave({ state = "idle", audioLevel = 0 }) {
             envelope *
             (1 + 0.3 * Math.sin(phase * 0.1 + x * 0.02));
 
-          if (x === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
         }
         ctx.stroke();
         ctx.restore();
       });
 
-      // Digital frequency bars in the center background
-      const barCount = 48;
+      // Gold & Crimson Audio Spectrum bars in background
+      const barCount = 44;
       const barSpacing = width / barCount;
       ctx.save();
       for (let i = 0; i < barCount; i++) {
         const norm = i / barCount;
         const barEnv = Math.sin(norm * Math.PI);
-        const barAmp = (dynamicAmp * 0.75 * barEnv) * Math.abs(Math.sin(phase * 0.08 + i * 0.4));
+        const barAmp = (dynamicAmp * 0.7 * barEnv) * Math.abs(Math.sin(phase * 0.08 + i * 0.4));
         const bx = i * barSpacing + barSpacing * 0.25;
         const bWidth = barSpacing * 0.5;
 
         const grad = ctx.createLinearGradient(0, centerY - barAmp, 0, centerY + barAmp);
-        grad.addColorStop(0, "rgba(0, 243, 255, 0.8)");
-        grad.addColorStop(0.5, "rgba(168, 85, 247, 0.3)");
-        grad.addColorStop(1, "rgba(0, 243, 255, 0.8)");
+        grad.addColorStop(0, "rgba(255, 195, 0, 0.85)");
+        grad.addColorStop(0.5, "rgba(186, 24, 27, 0.3)");
+        grad.addColorStop(1, "rgba(255, 195, 0, 0.85)");
 
         ctx.fillStyle = grad;
         ctx.fillRect(bx, centerY - barAmp, bWidth, barAmp * 2);
@@ -83,36 +78,26 @@ export default function ArcWave({ state = "idle", audioLevel = 0 }) {
     };
 
     render();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
+    return () => cancelAnimationFrame(animationFrameId);
   }, [state, audioLevel]);
 
   return (
-    <div className="relative w-full h-28 sm:h-36 flex items-center justify-center overflow-hidden rounded-2xl border border-cyan-500/25 bg-black/50 backdrop-blur-xl shadow-[0_0_30px_rgba(0,243,255,0.12)]">
-      {/* Background HUD Grid */}
+    <div className="relative w-full h-24 sm:h-28 flex items-center justify-center overflow-hidden rounded-2xl border border-amber-500/30 bg-[#0d0407]/70 backdrop-blur-xl shadow-[0_0_30px_rgba(255,183,3,0.12)]">
+      {/* Stark Grid Overlay */}
       <div 
-        className="pointer-events-none absolute inset-0 opacity-15"
+        className="pointer-events-none absolute inset-0 opacity-10"
         style={{
-          backgroundImage: "linear-gradient(to right, #00f3ff 1px, transparent 1px), linear-gradient(to bottom, #00f3ff 1px, transparent 1px)",
+          backgroundImage: "linear-gradient(to right, #ffb703 1px, transparent 1px), linear-gradient(to bottom, #d00000 1px, transparent 1px)",
           backgroundSize: "28px 28px"
         }}
       />
 
-      {/* Target Crosshairs / HUD Markers */}
-      <div className="pointer-events-none absolute left-4 top-4 font-mono text-[10px] text-cyan-400/70 tracking-widest flex items-center gap-1.5">
-        <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping" />
-        AUDIO SPECTRUM // HARMONIC MATRIX
+      <div className="pointer-events-none absolute left-4 top-2.5 font-mono text-[9px] text-amber-400/80 tracking-widest flex items-center gap-1.5">
+        <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping" />
+        STARK HARMONIC RESONANCE
       </div>
-      <div className="pointer-events-none absolute right-4 top-4 font-mono text-[10px] text-cyan-400/50">
-        STATUS: <span className="text-cyan-300 uppercase font-semibold">{state}</span>
-      </div>
-      <div className="pointer-events-none absolute left-4 bottom-3 font-mono text-[10px] text-slate-500">
-        FREQ: 44.1 kHz // DYNAMIC GAIN
-      </div>
-      <div className="pointer-events-none absolute right-4 bottom-3 font-mono text-[10px] text-slate-500">
-        JARVIS ARC CORE v4.2
+      <div className="pointer-events-none absolute right-4 top-2.5 font-mono text-[9px] text-amber-400/60">
+        STATUS: <span className="text-amber-300 uppercase font-semibold">{state}</span>
       </div>
 
       <canvas ref={canvasRef} className="w-full h-full block" />
