@@ -99,16 +99,14 @@ export default function App() {
       const voices = window.speechSynthesis.getVoices();
 
       if (language === "te") {
-        // Telugu Male preference
         const teluguVoice = voices.find(v => (v.lang.includes("te") || v.lang.includes("tel")) && !v.name.toLowerCase().includes("female"));
         if (teluguVoice) utterance.voice = teluguVoice;
         utterance.lang = "te-IN";
-        utterance.pitch = 0.88; // Low pitch to guarantee masculine sound
-        utterance.rate = 0.98;
+        utterance.pitch = 0.85; // Lowered pitch to guarantee masculine depth
+        utterance.rate = 1.0;
       } else {
-        // STRICTLY MALE BRITISH / US VOICE FILTER:
-        // Must exclude female names (Zira, Hazel, Susan, Catherine, Victoria, Linda, Jenny, etc.)
-        const femaleNames = ["female", "zira", "hazel", "susan", "catherine", "victoria", "linda", "jenny", "samantha", "karen", "serena", "moira", "fiona", "tessa"];
+        // STRICT MALE ONLY FILTER
+        const femaleNames = ["female", "zira", "hazel", "susan", "catherine", "victoria", "linda", "jenny", "samantha", "karen", "serena", "moira", "fiona", "tessa", "aria", "ava"];
         
         const isMale = (v) => {
           const lower = v.name.toLowerCase();
@@ -125,8 +123,8 @@ export default function App() {
 
         if (britishMale) utterance.voice = britishMale;
         utterance.lang = "en-GB";
-        utterance.pitch = 0.88; // Deep, composed Paul Bettany masculine pitch
-        utterance.rate = 0.98;
+        utterance.pitch = 0.86; // Deep Paul Bettany tone
+        utterance.rate = 1.02;  // Fluid natural pacing
       }
 
       utterance.onstart = () => {
