@@ -16,6 +16,20 @@
   font-family: 'JetBrains Mono', monospace;
 }
 
+/* 3D Y-Axis Horizontal Rotation from Right to Left (0deg -> -360deg) */
+@keyframes spin-right-to-left {
+  0% {
+    transform: rotateY(0deg);
+  }
+  100% {
+    transform: rotateY(-360deg);
+  }
+}
+
+.animate-rotate-right-to-left {
+  animation: spin-right-to-left 18s linear infinite;
+}
+
 /* Subtle Iron Man Mark IV Accents */
 @keyframes mark4-pulse {
   0%, 100% {
