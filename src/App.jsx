@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Mic, MicOff, Send, Volume2, VolumeX, Key, Cpu, Shield,
-  Radio, Sparkles, User, Settings, Trash2, UserCheck, MessageSquare, Power
+  Radio, Sparkles, User, Settings, Trash2, UserCheck, MessageSquare,
+  Activity, Zap, Orbit, Globe, Terminal, AlertCircle
 } from "lucide-react";
 import ArcWave from "./components/ArcWave";
-import JarvisFace from "./components/JarvisFace";
+import JarvisArcFace from "./components/JarvisArcFace";
 import { askJarvis } from "./services/gemini";
 
 export default function App() {
@@ -24,7 +25,7 @@ export default function App() {
       {
         id: 1,
         role: "ai",
-        text: `Online and operational, ${currentName}. All core protocols are initialized. How may I be of service?`,
+        text: `At your service, ${currentName}. All secondary protocols report nominal parameters. How may I assist your current endeavor?`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ];
@@ -40,12 +41,26 @@ export default function App() {
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [audioLevel, setAudioLevel] = useState(0);
-  const [hasStartedGreeting, setHasStartedGreeting] = useState(false);
+
+  // Stark Telemetry data for HUD aesthetic
+  const [hudStats, setHudStats] = useState({ coreTemp: 98.4, flux: 400, linkSpeed: 1.2 });
 
   const chatEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const audioContextRef = useRef(null);
   const micStreamRef = useRef(null);
+
+  // Dynamic HUD telemetry simulation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHudStats({
+        coreTemp: +(97 + Math.random() * 2).toFixed(1),
+        flux: 395 + Math.floor(Math.random() * 12),
+        linkSpeed: +(1.15 + Math.random() * 0.15).toFixed(2),
+      });
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Save history to localStorage
   useEffect(() => {
@@ -53,36 +68,40 @@ export default function App() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, status]);
 
-  // Text-To-Speech (Robust Speech Synthesis with user gesture handling)
+  // Clean text and ensure smooth British pronunciation of "Jarvis"
+  const prepareSpeechText = (raw) => {
+    return raw
+      .replace(/J\.A\.R\.V\.I\.S\./gi, "Jarvis") // Pronounce as fluid word "Jarvis", not letters!
+      .replace(/J-A-R-V-I-S/gi, "Jarvis")
+      .replace(/[*#`_~]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  // Text-To-Speech (Paul Bettany British AI voice reproduction)
   const speakText = (text) => {
     if (!soundEnabled || !('speechSynthesis' in window)) return;
-    
-    // Resume audio context if suspended
     window.speechSynthesis.cancel();
 
-    // Clean formatting and keep concise for natural voice
-    const cleanText = text.replace(/[*#`_~]/g, "").slice(0, 400);
-    const utterance = new SpeechSynthesisUtterance(cleanText);
+    const clean = prepareSpeechText(text).slice(0, 450);
+    const utterance = new SpeechSynthesisUtterance(clean);
 
-    const selectVoice = () => {
+    const applyVoice = () => {
       const voices = window.speechSynthesis.getVoices();
-      const britishOrNatural = voices.find(v => 
-        v.lang.includes("en") && (
-          v.name.includes("UK") || 
-          v.name.includes("David") || 
-          v.name.includes("Male") || 
-          v.name.includes("Natural") || 
-          v.name.includes("George")
-        )
-      ) || voices.find(v => v.lang.startsWith("en"));
+      // Prioritize natural British male voices (Paul Bettany profile)
+      const britishVoice = voices.find(v => 
+        (v.lang === "en-GB" || v.lang.includes("GB") || v.name.toLowerCase().includes("uk")) &&
+        (v.name.toLowerCase().includes("male") || v.name.toLowerCase().includes("george") || v.name.toLowerCase().includes("natural") || v.name.toLowerCase().includes("david"))
+      ) || voices.find(v => v.lang.includes("GB")) 
+        || voices.find(v => v.lang.startsWith("en"));
 
-      if (britishOrNatural) utterance.voice = britishOrNatural;
-      utterance.rate = 1.0;
-      utterance.pitch = 0.95;
+      if (britishVoice) utterance.voice = britishVoice;
+      utterance.rate = 1.0; // Crisp, dignified cadence
+      utterance.pitch = 0.94; // Deep, composed Paul Bettany British tone
 
       utterance.onstart = () => {
         setStatus("speaking");
-        setAudioLevel(0.65);
+        setAudioLevel(0.7);
       };
       utterance.onend = () => {
         setStatus("idle");
@@ -97,13 +116,13 @@ export default function App() {
     };
 
     if (window.speechSynthesis.getVoices().length === 0) {
-      window.speechSynthesis.onvoiceschanged = selectVoice;
+      window.speechSynthesis.onvoiceschanged = applyVoice;
     } else {
-      selectVoice();
+      applyVoice();
     }
   };
 
-  // Welcome user once name is saved
+  // Welcome user once name is declared
   const handleSaveName = (e) => {
     e?.preventDefault();
     const finalName = nameInput.trim() || "Sir";
@@ -111,7 +130,7 @@ export default function App() {
     localStorage.setItem("jarvis_user_name", finalName);
     setShowNameModal(false);
 
-    const welcomeMsg = `Greetings, ${finalName}. I am J.A.R.V.I.S., your autonomous personal assistant. All systems are initialized and standing by for your command.`;
+    const welcomeMsg = `Greetings, ${finalName}. I am Jarvis. All primary systems are online and calibrated to your biometric specifications. Ready when you are.`;
     setMessages([
       {
         id: Date.now(),
@@ -121,24 +140,10 @@ export default function App() {
       }
     ]);
 
-    // Speak welcome message
-    speakText(welcomeMsg);
-  };
-
-  // Click-to-activate speech on first load (bypasses browser autoplay policy)
-  const triggerAudioActivation = () => {
-    if (!hasStartedGreeting && userName) {
-      setHasStartedGreeting(true);
-      speakText(`Online and ready, ${userName}. How may I assist you today?`);
-    }
-  };
-
-  // Save API key
-  const handleSaveApiKey = (key) => {
-    const cleanKey = key.trim();
-    setApiKey(cleanKey);
-    localStorage.setItem("jarvis_gemini_api_key", cleanKey);
-    setShowKeyModal(false);
+    // Speak welcome message seamlessly
+    setTimeout(() => {
+      speakText(welcomeMsg);
+    }, 200);
   };
 
   // Speech Recognition (Microphone)
@@ -153,9 +158,10 @@ export default function App() {
       return;
     }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Speech recognition is supported in Google Chrome, Microsoft Edge, and Brave.");
+    const SpeechRecognition = window.SpeechRecognition || window.webkitAudioContext;
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) {
+      alert("Microphone recognition is supported in Chrome, Edge, and Brave.");
       return;
     }
 
@@ -176,12 +182,12 @@ export default function App() {
           let sum = 0;
           for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
           const avg = sum / dataArray.length;
-          setAudioLevel(Math.min(1, avg / 128));
+          setAudioLevel(Math.min(1, avg / 110));
           requestAnimationFrame(checkMicVolume);
         }
       };
 
-      const recognition = new SpeechRecognition();
+      const recognition = new SpeechRec();
       recognitionRef.current = recognition;
       recognition.continuous = false;
       recognition.interimResults = false;
@@ -216,8 +222,8 @@ export default function App() {
 
       recognition.start();
     } catch (err) {
-      console.error("Microphone access error:", err);
-      alert("Microphone permission was denied. Please allow microphone access in your browser bar.");
+      console.error("Microphone error:", err);
+      alert("Please grant microphone permissions to speak to Jarvis.");
     }
   };
 
@@ -265,7 +271,7 @@ export default function App() {
       {
         id: 1,
         role: "ai",
-        text: `Context buffer cleared, ${currentName}. All registers reset. How can I help you?`,
+        text: `Diagnostics wiped clean, ${currentName}. All registers restored. Standing by.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ];
@@ -274,100 +280,113 @@ export default function App() {
   };
 
   return (
-    <div 
-      onClick={triggerAudioActivation}
-      className="relative flex h-screen w-full flex-col overflow-hidden bg-[#04060d] text-slate-200"
-    >
-      {/* Background Cyber Ambient Halos */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[900px] rounded-full bg-cyan-500/10 blur-[140px]" />
-      <div className="pointer-events-none absolute -bottom-32 right-10 h-96 w-96 rounded-full bg-violet-600/15 blur-[120px]" />
+    <div className="relative flex h-screen w-full flex-col overflow-hidden bg-[#03050c] text-slate-100 font-sans">
+      {/* STARK INDUSTRIES AMBIENT RADIAL LIGHTS */}
+      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[550px] w-[950px] rounded-full bg-cyan-500/15 blur-[150px]" />
+      <div className="pointer-events-none absolute -bottom-40 right-10 h-[450px] w-[500px] rounded-full bg-blue-600/15 blur-[130px]" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03] bg-[radial-gradient(#00f3ff_1px,transparent_1px)] [background-size:24px_24px]" />
 
-      {/* TOP HEADER */}
-      <header className="relative z-20 flex items-center justify-between border-b border-cyan-500/20 bg-black/40 px-6 py-3 backdrop-blur-xl">
+      {/* TOP HUD BAR */}
+      <header className="relative z-20 flex items-center justify-between border-b border-cyan-500/20 bg-black/50 px-5 py-2.5 backdrop-blur-2xl">
         <div className="flex items-center gap-3">
           <div className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-400/60 bg-cyan-950/40 shadow-[0_0_20px_rgba(0,243,255,0.4)]">
-            <Radio className="h-5 w-5 text-cyan-300 animate-pulse" />
+            <Orbit className="h-5 w-5 text-cyan-300 animate-spin [animation-duration:12s]" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-orbitron text-lg font-extrabold tracking-widest text-cyan-300">
+              <span className="font-orbitron text-lg font-black tracking-widest text-cyan-300 drop-shadow-[0_0_10px_rgba(0,243,255,0.6)]">
                 J.A.R.V.I.S.
               </span>
-              <span className="rounded bg-cyan-400/10 px-1.5 py-0.5 font-mono text-[10px] text-cyan-300 border border-cyan-400/30">
-                MARK VII
+              <span className="rounded bg-cyan-400/10 px-1.5 py-0.5 font-mono text-[9px] text-cyan-300 border border-cyan-400/30">
+                MARK VII // STARK OS
               </span>
             </div>
-            <div className="flex items-center gap-1.5 font-mono text-[11px] text-emerald-400">
+            <div className="flex items-center gap-2 font-mono text-[10px] text-emerald-400">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping inline-block" />
-              ONLINE // USER: <span className="font-bold text-cyan-300">{userName || "UNIDENTIFIED"}</span>
+              ONLINE // PROTOCOL: <span className="font-bold text-cyan-200">{userName || "GUEST"}</span>
             </div>
           </div>
         </div>
 
+        {/* Real-time Stark HUD Telemetry */}
+        <div className="hidden md:flex items-center gap-6 font-mono text-[11px] text-slate-400 border-x border-cyan-500/20 px-6">
+          <div className="flex items-center gap-2">
+            <Zap size={14} className="text-amber-400" />
+            <span>FLUX: <strong className="text-cyan-300">{hudStats.flux}%</strong></span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Activity size={14} className="text-cyan-400" />
+            <span>CORE: <strong className="text-emerald-400">{hudStats.coreTemp}°C</strong></span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Globe size={14} className="text-blue-400" />
+            <span>LINK: <strong className="text-cyan-300">{hudStats.linkSpeed} TB/s</strong></span>
+          </div>
+        </div>
+
         {/* Action Controls */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setShowNameModal(true)}
-            className="flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/20 px-3 py-1.5 font-mono text-xs text-cyan-300 hover:border-cyan-400 transition"
-            title="Change Your Name"
+            className="flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/20 px-2.5 py-1.5 font-mono text-xs text-cyan-300 hover:border-cyan-400 transition"
+            title="Change User Name"
           >
             <UserCheck size={14} />
-            <span className="hidden sm:inline">{userName ? userName : "SET NAME"}</span>
+            <span className="hidden sm:inline">{userName || "SET NAME"}</span>
           </button>
 
           <button
             onClick={() => {
               const next = !soundEnabled;
               setSoundEnabled(next);
-              if (next) speakText(`Voice synthesis re-engaged, ${userName || "Sir"}.`);
+              if (next) speakText(`Audio feed restored, ${userName || "Sir"}.`);
               else window.speechSynthesis.cancel();
             }}
-            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-mono text-xs transition ${
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-xs transition ${
               soundEnabled
                 ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300 shadow-[0_0_12px_rgba(0,243,255,0.2)]"
                 : "border-slate-800 bg-black/40 text-slate-500"
             }`}
-            title="Toggle Voice Output"
           >
             {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
-            <span className="hidden sm:inline">{soundEnabled ? "VOICE ON" : "MUTED"}</span>
+            <span className="hidden sm:inline">{soundEnabled ? "VOICE" : "MUTED"}</span>
           </button>
 
           <button
             onClick={() => setShowKeyModal(true)}
-            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-mono text-xs transition ${
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-xs transition ${
               apiKey
                 ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
                 : "border-amber-500/50 bg-amber-500/15 text-amber-300 animate-pulse"
             }`}
           >
             <Key size={14} />
-            <span>{apiKey ? "API KEY SET" : "CONFIGURE API"}</span>
+            <span className="hidden sm:inline">{apiKey ? "API ACTIVE" : "API KEY"}</span>
           </button>
 
           <button
             onClick={clearChat}
-            className="rounded-lg border border-slate-800 p-2 text-slate-400 transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300"
-            title="Clear Chat History"
+            className="rounded-lg border border-slate-800 p-2 text-slate-400 hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300 transition"
+            title="Clear Chat Logs"
           >
-            <Trash2 size={16} />
+            <Trash2 size={15} />
           </button>
         </div>
       </header>
 
-      {/* MAIN CONSOLE AREA */}
-      <main className="relative z-10 flex min-h-0 flex-1 flex-col px-4 py-2 sm:px-10 max-w-6xl mx-auto w-full">
-        {/* CENTER STAGE: TALKING ROBOT FACE & HUD */}
-        <section className="shrink-0 flex flex-col items-center justify-center my-1">
-          <JarvisFace state={status} audioLevel={audioLevel} />
-          <div className="font-mono text-xs tracking-widest text-cyan-400/80 mt-1 flex items-center gap-2">
+      {/* MAIN CONSOLE INTERFACE */}
+      <main className="relative z-10 flex min-h-0 flex-1 flex-col px-4 py-2 sm:px-12 max-w-6xl mx-auto w-full">
+        {/* CENTER STAGE: PHOTOREALISTIC STARK ARC REACTOR FACE */}
+        <section className="shrink-0 flex flex-col items-center justify-center my-0">
+          <JarvisArcFace state={status} audioLevel={audioLevel} />
+          <div className="font-mono text-[11px] tracking-widest text-cyan-400/80 -mt-2 flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping" />
-            ARC REACTOR STABILIZED // STATE: <span className="text-cyan-200 font-bold uppercase">{status}</span>
+            STARK ARC MATRIX // STATUS: <span className="text-cyan-200 font-bold uppercase">{status}</span>
           </div>
         </section>
 
-        {/* MIDDLE: CONVERSATION STREAM */}
-        <div className="flex-1 space-y-3 overflow-y-auto pr-2 rounded-xl my-2 max-h-[36vh]">
+        {/* MIDDLE: DIALOGUE FEED */}
+        <div className="flex-1 space-y-3 overflow-y-auto pr-2 rounded-xl my-2 max-h-[34vh]">
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -376,8 +395,8 @@ export default function App() {
               <div
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
                   msg.role === "ai"
-                    ? "border-cyan-400/50 bg-cyan-500/10 text-cyan-300 shadow-[0_0_12px_rgba(0,243,255,0.25)]"
-                    : "border-violet-400/50 bg-violet-500/10 text-violet-300"
+                    ? "border-cyan-400/50 bg-cyan-500/10 text-cyan-300 shadow-[0_0_12px_rgba(0,243,255,0.3)]"
+                    : "border-blue-400/50 bg-blue-500/10 text-blue-300"
                 }`}
               >
                 {msg.role === "ai" ? <Sparkles size={16} /> : <User size={16} />}
@@ -386,8 +405,8 @@ export default function App() {
               <div
                 className={`max-w-[85%] rounded-2xl border px-4 py-2.5 backdrop-blur-md ${
                   msg.role === "ai"
-                    ? "border-cyan-500/20 bg-cyan-950/25 text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
-                    : "border-violet-500/30 bg-violet-950/30 text-violet-100"
+                    ? "border-cyan-500/25 bg-cyan-950/25 text-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
+                    : "border-blue-500/30 bg-blue-950/30 text-blue-100"
                 }`}
               >
                 <div className="mb-1 flex items-center justify-between gap-4 font-mono text-[10px] text-slate-400">
@@ -408,8 +427,8 @@ export default function App() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-400/50 bg-cyan-500/10 text-cyan-300 animate-pulse">
                 <Cpu size={16} />
               </div>
-              <div className="rounded-2xl border border-cyan-500/20 bg-cyan-950/20 px-4 py-2 text-xs font-mono text-cyan-300 flex items-center gap-2">
-                <span>COMPUTING RESPONSE MATRIX</span>
+              <div className="rounded-2xl border border-cyan-500/20 bg-cyan-950/25 px-4 py-2 text-xs font-mono text-cyan-300 flex items-center gap-2">
+                <span>PROCESSING TELEMETRY MATRIX</span>
                 <span className="flex gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-bounce" />
                   <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.2s]" />
@@ -422,20 +441,20 @@ export default function App() {
           <div ref={chatEndRef} />
         </div>
 
-        {/* BOTTOM SECTION: BIG WAVEFORM + INPUT HUD */}
+        {/* BOTTOM SECTION: BIG WAVEFORM + INPUT COMMAND BAR */}
         <section className="shrink-0 space-y-2 mt-auto pb-2">
-          {/* BIG HOLOGRAPHIC WAVE AT THE BOTTOM */}
+          {/* BIG DYNAMIC WAVEFORM AT BOTTOM */}
           <ArcWave state={status} audioLevel={audioLevel} />
 
           {/* INPUT BAR */}
-          <div className="relative flex items-center gap-2 rounded-2xl border border-cyan-500/30 bg-black/70 p-2 backdrop-blur-xl shadow-[0_0_30px_rgba(0,243,255,0.15)]">
+          <div className="relative flex items-center gap-2 rounded-2xl border border-cyan-500/30 bg-black/75 p-2 backdrop-blur-2xl shadow-[0_0_35px_rgba(0,243,255,0.18)]">
             {/* MIC BUTTON */}
             <button
               onClick={toggleListening}
               className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border transition-all ${
                 status === "listening"
                   ? "border-red-500 bg-red-500/25 text-red-400 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.5)]"
-                  : "border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:border-cyan-400 hover:bg-cyan-500/20"
+                  : "border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:border-cyan-300 hover:bg-cyan-500/20 shadow-[0_0_12px_rgba(0,243,255,0.2)]"
               }`}
               title="Speak to Jarvis"
             >
@@ -450,7 +469,7 @@ export default function App() {
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
               placeholder={
                 status === "listening"
-                  ? "Listening to your voice... speak now"
+                  ? "Listening to voice input... speak now"
                   : `Ask Jarvis anything, ${userName || "Sir"}...`
               }
               className="flex-1 bg-transparent px-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none font-sans"
@@ -460,7 +479,7 @@ export default function App() {
             <button
               onClick={() => handleSend()}
               disabled={!input.trim() || status === "thinking"}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 text-black font-semibold transition hover:brightness-110 disabled:opacity-30 disabled:hover:brightness-100 shadow-[0_0_15px_rgba(0,243,255,0.4)]"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 text-black font-semibold transition hover:brightness-110 disabled:opacity-30 disabled:hover:brightness-100 shadow-[0_0_18px_rgba(0,243,255,0.4)]"
             >
               <Send size={18} />
             </button>
@@ -468,22 +487,22 @@ export default function App() {
         </section>
       </main>
 
-      {/* USER NAME MODAL (First Open Greeting) */}
+      {/* IDENTITY PROTOCOL MODAL */}
       {showNameModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-lg p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-xl p-4">
           <form 
             onSubmit={handleSaveName}
-            className="w-full max-w-md rounded-2xl border border-cyan-500/40 bg-[#070b16] p-6 shadow-[0_0_60px_rgba(0,243,255,0.3)] text-center"
+            className="w-full max-w-md rounded-2xl border border-cyan-500/40 bg-[#070b16] p-7 shadow-[0_0_70px_rgba(0,243,255,0.35)] text-center"
           >
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-400/50 bg-cyan-500/10 text-cyan-300 shadow-[0_0_20px_rgba(0,243,255,0.3)]">
               <User size={28} />
             </div>
 
-            <h3 className="font-orbitron text-xl font-bold text-cyan-300 mb-1">
-              IDENTITY PROTOCOL
+            <h3 className="font-orbitron text-xl font-black text-cyan-300 mb-1 tracking-wider">
+              BIOMETRIC PROTOCOL
             </h3>
-            <p className="text-xs text-slate-400 mb-5 font-sans">
-              Welcome. Please declare your identity so J.A.R.V.I.S. may calibrate speech synthesis and address you appropriately.
+            <p className="text-xs text-slate-400 mb-5 font-sans leading-relaxed">
+              Welcome to the Stark Industries interface. Please declare your name so J.A.R.V.I.S. may address you with proper protocol.
             </p>
 
             <input
@@ -499,7 +518,7 @@ export default function App() {
               type="submit"
               className="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 py-3 font-orbitron text-xs font-bold tracking-widest text-black hover:brightness-110 shadow-[0_0_20px_rgba(0,243,255,0.4)]"
             >
-              INITIALIZE JARVIS
+              INITIALIZE PROTOCOLS
             </button>
           </form>
         </div>
@@ -537,7 +556,9 @@ export default function App() {
               <button
                 onClick={() => {
                   const val = document.getElementById("apiKeyInput").value;
-                  handleSaveApiKey(val);
+                  setApiKey(val.trim());
+                  localStorage.setItem("jarvis_gemini_api_key", val.trim());
+                  setShowKeyModal(false);
                 }}
                 className="rounded-xl bg-cyan-400 px-5 py-2 text-xs font-bold text-black hover:bg-cyan-300 shadow-[0_0_15px_rgba(0,243,255,0.4)]"
               >
