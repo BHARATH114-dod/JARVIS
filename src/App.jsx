@@ -1,23 +1,30 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Mic, MicOff, Send, Volume2, VolumeX, Key, Cpu, Shield,
-  Terminal, Sparkles, User, RefreshCw, Layers, Radio, Activity,
-  Check, Copy, Settings, Trash2
+  Radio, Sparkles, User, Settings, Trash2, UserCheck, MessageSquare, Power
 } from "lucide-react";
 import ArcWave from "./components/ArcWave";
+import JarvisFace from "./components/JarvisFace";
 import { askJarvis } from "./services/gemini";
 
 export default function App() {
+  // Stored User Name (asks on first visit)
+  const [userName, setUserName] = useState(() => localStorage.getItem("jarvis_user_name") || "");
+  const [nameInput, setNameInput] = useState("");
+  const [showNameModal, setShowNameModal] = useState(() => !localStorage.getItem("jarvis_user_name"));
+
+  // Chat History
   const [messages, setMessages] = useState(() => {
     const saved = localStorage.getItem("jarvis_chat_history");
     if (saved) {
       try { return JSON.parse(saved); } catch (e) { /* ignore */ }
     }
+    const currentName = localStorage.getItem("jarvis_user_name") || "Sir";
     return [
       {
         id: 1,
         role: "ai",
-        text: "Online and ready, Sir. All secondary diagnostics report optimal parameters. How may I assist your current endeavor?",
+        text: `Online and operational, ${currentName}. All core protocols are initialized. How may I be of service?`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ];
@@ -33,61 +40,108 @@ export default function App() {
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [hasStartedGreeting, setHasStartedGreeting] = useState(false);
 
   const chatEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const audioContextRef = useRef(null);
   const micStreamRef = useRef(null);
 
-  // Save chat history to localStorage
+  // Save history to localStorage
   useEffect(() => {
     localStorage.setItem("jarvis_chat_history", JSON.stringify(messages));
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, status]);
 
+  // Text-To-Speech (Robust Speech Synthesis with user gesture handling)
+  const speakText = (text) => {
+    if (!soundEnabled || !('speechSynthesis' in window)) return;
+    
+    // Resume audio context if suspended
+    window.speechSynthesis.cancel();
+
+    // Clean formatting and keep concise for natural voice
+    const cleanText = text.replace(/[*#`_~]/g, "").slice(0, 400);
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+
+    const selectVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const britishOrNatural = voices.find(v => 
+        v.lang.includes("en") && (
+          v.name.includes("UK") || 
+          v.name.includes("David") || 
+          v.name.includes("Male") || 
+          v.name.includes("Natural") || 
+          v.name.includes("George")
+        )
+      ) || voices.find(v => v.lang.startsWith("en"));
+
+      if (britishOrNatural) utterance.voice = britishOrNatural;
+      utterance.rate = 1.0;
+      utterance.pitch = 0.95;
+
+      utterance.onstart = () => {
+        setStatus("speaking");
+        setAudioLevel(0.65);
+      };
+      utterance.onend = () => {
+        setStatus("idle");
+        setAudioLevel(0);
+      };
+      utterance.onerror = () => {
+        setStatus("idle");
+        setAudioLevel(0);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    };
+
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.onvoiceschanged = selectVoice;
+    } else {
+      selectVoice();
+    }
+  };
+
+  // Welcome user once name is saved
+  const handleSaveName = (e) => {
+    e?.preventDefault();
+    const finalName = nameInput.trim() || "Sir";
+    setUserName(finalName);
+    localStorage.setItem("jarvis_user_name", finalName);
+    setShowNameModal(false);
+
+    const welcomeMsg = `Greetings, ${finalName}. I am J.A.R.V.I.S., your autonomous personal assistant. All systems are initialized and standing by for your command.`;
+    setMessages([
+      {
+        id: Date.now(),
+        role: "ai",
+        text: welcomeMsg,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    ]);
+
+    // Speak welcome message
+    speakText(welcomeMsg);
+  };
+
+  // Click-to-activate speech on first load (bypasses browser autoplay policy)
+  const triggerAudioActivation = () => {
+    if (!hasStartedGreeting && userName) {
+      setHasStartedGreeting(true);
+      speakText(`Online and ready, ${userName}. How may I assist you today?`);
+    }
+  };
+
   // Save API key
   const handleSaveApiKey = (key) => {
-    setApiKey(key.trim());
-    localStorage.setItem("jarvis_gemini_api_key", key.trim());
+    const cleanKey = key.trim();
+    setApiKey(cleanKey);
+    localStorage.setItem("jarvis_gemini_api_key", cleanKey);
     setShowKeyModal(false);
   };
 
-  // Text-To-Speech (Jarvis Voice)
-  const speakText = (text) => {
-    if (!soundEnabled || !('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-
-    // Clean markdown before speaking
-    const cleanText = text.replace(/[*#`_~]/g, "").slice(0, 350);
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-
-    // Pick best available English voice
-    const voices = window.speechSynthesis.getVoices();
-    const jarvisVoice = voices.find(v => 
-      v.lang.includes("en") && (v.name.includes("UK") || v.name.includes("David") || v.name.includes("Male") || v.name.includes("Natural"))
-    ) || voices.find(v => v.lang.startsWith("en"));
-
-    if (jarvisVoice) utterance.voice = jarvisVoice;
-    utterance.rate = 1.02;
-    utterance.pitch = 0.95;
-
-    utterance.onstart = () => {
-      setStatus("speaking");
-      setAudioLevel(0.65);
-    };
-    utterance.onend = () => {
-      setStatus("idle");
-      setAudioLevel(0);
-    };
-    utterance.onerror = () => {
-      setStatus("idle");
-      setAudioLevel(0);
-    };
-
-    window.speechSynthesis.speak(utterance);
-  };
-
-  // Speech Recognition (Mic Input)
+  // Speech Recognition (Microphone)
   const toggleListening = async () => {
     if (status === "listening") {
       recognitionRef.current?.stop();
@@ -101,12 +155,11 @@ export default function App() {
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser. Please use Chrome, Edge, or Brave.");
+      alert("Speech recognition is supported in Google Chrome, Microsoft Edge, and Brave.");
       return;
     }
 
     try {
-      // Connect real microphone amplitude to wave visualization
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       micStreamRef.current = stream;
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -163,8 +216,8 @@ export default function App() {
 
       recognition.start();
     } catch (err) {
-      console.error("Microphone access denied:", err);
-      alert("Please allow microphone permissions to speak to Jarvis.");
+      console.error("Microphone access error:", err);
+      alert("Microphone permission was denied. Please allow microphone access in your browser bar.");
     }
   };
 
@@ -188,6 +241,7 @@ export default function App() {
       prompt: trimmed,
       history: messages,
       apiKey: apiKey,
+      userName: userName || "Sir",
     });
 
     const aiMsg = {
@@ -206,11 +260,12 @@ export default function App() {
   };
 
   const clearChat = () => {
+    const currentName = userName || "Sir";
     const reset = [
       {
         id: 1,
         role: "ai",
-        text: "Context window purged. Neural buffer re-initialized. Ready for your instructions.",
+        text: `Context buffer cleared, ${currentName}. All registers reset. How can I help you?`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ];
@@ -219,9 +274,12 @@ export default function App() {
   };
 
   return (
-    <div className="relative flex h-screen w-full flex-col overflow-hidden bg-[#05070e] text-slate-200">
-      {/* Background Cybernetic Glow & Arc Grid */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-cyan-500/10 blur-[130px]" />
+    <div 
+      onClick={triggerAudioActivation}
+      className="relative flex h-screen w-full flex-col overflow-hidden bg-[#04060d] text-slate-200"
+    >
+      {/* Background Cyber Ambient Halos */}
+      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[900px] rounded-full bg-cyan-500/10 blur-[140px]" />
       <div className="pointer-events-none absolute -bottom-32 right-10 h-96 w-96 rounded-full bg-violet-600/15 blur-[120px]" />
 
       {/* TOP HEADER */}
@@ -241,18 +299,32 @@ export default function App() {
             </div>
             <div className="flex items-center gap-1.5 font-mono text-[11px] text-emerald-400">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping inline-block" />
-              ONLINE // NEURAL LINK ACTIVE
+              ONLINE // USER: <span className="font-bold text-cyan-300">{userName || "UNIDENTIFIED"}</span>
             </div>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
+            onClick={() => setShowNameModal(true)}
+            className="flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/20 px-3 py-1.5 font-mono text-xs text-cyan-300 hover:border-cyan-400 transition"
+            title="Change Your Name"
+          >
+            <UserCheck size={14} />
+            <span className="hidden sm:inline">{userName ? userName : "SET NAME"}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              const next = !soundEnabled;
+              setSoundEnabled(next);
+              if (next) speakText(`Voice synthesis re-engaged, ${userName || "Sir"}.`);
+              else window.speechSynthesis.cancel();
+            }}
             className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-mono text-xs transition ${
               soundEnabled
-                ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
+                ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300 shadow-[0_0_12px_rgba(0,243,255,0.2)]"
                 : "border-slate-800 bg-black/40 text-slate-500"
             }`}
             title="Toggle Voice Output"
@@ -270,7 +342,7 @@ export default function App() {
             }`}
           >
             <Key size={14} />
-            <span>{apiKey ? "API CONNECTED" : "CONFIGURE API KEY"}</span>
+            <span>{apiKey ? "API KEY SET" : "CONFIGURE API"}</span>
           </button>
 
           <button
@@ -283,15 +355,19 @@ export default function App() {
         </div>
       </header>
 
-      {/* MAIN CONTENT AREA */}
-      <main className="relative z-10 flex min-h-0 flex-1 flex-col px-4 py-3 sm:px-12 max-w-6xl mx-auto w-full">
-        {/* BIG HOLOGRAPHIC WAVE STRUCTURE */}
-        <section className="mb-4 shrink-0">
-          <ArcWave state={status} audioLevel={audioLevel} />
+      {/* MAIN CONSOLE AREA */}
+      <main className="relative z-10 flex min-h-0 flex-1 flex-col px-4 py-2 sm:px-10 max-w-6xl mx-auto w-full">
+        {/* CENTER STAGE: TALKING ROBOT FACE & HUD */}
+        <section className="shrink-0 flex flex-col items-center justify-center my-1">
+          <JarvisFace state={status} audioLevel={audioLevel} />
+          <div className="font-mono text-xs tracking-widest text-cyan-400/80 mt-1 flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping" />
+            ARC REACTOR STABILIZED // STATE: <span className="text-cyan-200 font-bold uppercase">{status}</span>
+          </div>
         </section>
 
-        {/* CONVERSATION STREAM */}
-        <div className="flex-1 space-y-4 overflow-y-auto pr-2 rounded-xl">
+        {/* MIDDLE: CONVERSATION STREAM */}
+        <div className="flex-1 space-y-3 overflow-y-auto pr-2 rounded-xl my-2 max-h-[36vh]">
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -308,15 +384,15 @@ export default function App() {
               </div>
 
               <div
-                className={`max-w-[85%] rounded-2xl border px-4 py-3 backdrop-blur-md ${
+                className={`max-w-[85%] rounded-2xl border px-4 py-2.5 backdrop-blur-md ${
                   msg.role === "ai"
-                    ? "border-cyan-500/20 bg-cyan-950/20 text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
+                    ? "border-cyan-500/20 bg-cyan-950/25 text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
                     : "border-violet-500/30 bg-violet-950/30 text-violet-100"
                 }`}
               >
                 <div className="mb-1 flex items-center justify-between gap-4 font-mono text-[10px] text-slate-400">
                   <span className="font-semibold uppercase tracking-wider text-cyan-400">
-                    {msg.role === "ai" ? "J.A.R.V.I.S." : "COMMAND"}
+                    {msg.role === "ai" ? "J.A.R.V.I.S." : userName || "COMMAND"}
                   </span>
                   <span>{msg.timestamp}</span>
                 </div>
@@ -333,7 +409,7 @@ export default function App() {
                 <Cpu size={16} />
               </div>
               <div className="rounded-2xl border border-cyan-500/20 bg-cyan-950/20 px-4 py-2 text-xs font-mono text-cyan-300 flex items-center gap-2">
-                <span>PROCESSING INTENT MATRIX</span>
+                <span>COMPUTING RESPONSE MATRIX</span>
                 <span className="flex gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-bounce" />
                   <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.2s]" />
@@ -346,15 +422,19 @@ export default function App() {
           <div ref={chatEndRef} />
         </div>
 
-        {/* INPUT COMMAND HUD */}
-        <div className="mt-3 pb-3">
-          <div className="relative flex items-center gap-2 rounded-2xl border border-cyan-500/30 bg-black/60 p-2 backdrop-blur-xl shadow-[0_0_30px_rgba(0,243,255,0.15)]">
+        {/* BOTTOM SECTION: BIG WAVEFORM + INPUT HUD */}
+        <section className="shrink-0 space-y-2 mt-auto pb-2">
+          {/* BIG HOLOGRAPHIC WAVE AT THE BOTTOM */}
+          <ArcWave state={status} audioLevel={audioLevel} />
+
+          {/* INPUT BAR */}
+          <div className="relative flex items-center gap-2 rounded-2xl border border-cyan-500/30 bg-black/70 p-2 backdrop-blur-xl shadow-[0_0_30px_rgba(0,243,255,0.15)]">
             {/* MIC BUTTON */}
             <button
               onClick={toggleListening}
               className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border transition-all ${
                 status === "listening"
-                  ? "border-red-500 bg-red-500/20 text-red-400 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.5)]"
+                  ? "border-red-500 bg-red-500/25 text-red-400 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.5)]"
                   : "border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:border-cyan-400 hover:bg-cyan-500/20"
               }`}
               title="Speak to Jarvis"
@@ -370,8 +450,8 @@ export default function App() {
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
               placeholder={
                 status === "listening"
-                  ? "Listening to voice input... speak now"
-                  : "State your instruction or request, Sir..."
+                  ? "Listening to your voice... speak now"
+                  : `Ask Jarvis anything, ${userName || "Sir"}...`
               }
               className="flex-1 bg-transparent px-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none font-sans"
             />
@@ -385,8 +465,45 @@ export default function App() {
               <Send size={18} />
             </button>
           </div>
-        </div>
+        </section>
       </main>
+
+      {/* USER NAME MODAL (First Open Greeting) */}
+      {showNameModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-lg p-4">
+          <form 
+            onSubmit={handleSaveName}
+            className="w-full max-w-md rounded-2xl border border-cyan-500/40 bg-[#070b16] p-6 shadow-[0_0_60px_rgba(0,243,255,0.3)] text-center"
+          >
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-400/50 bg-cyan-500/10 text-cyan-300 shadow-[0_0_20px_rgba(0,243,255,0.3)]">
+              <User size={28} />
+            </div>
+
+            <h3 className="font-orbitron text-xl font-bold text-cyan-300 mb-1">
+              IDENTITY PROTOCOL
+            </h3>
+            <p className="text-xs text-slate-400 mb-5 font-sans">
+              Welcome. Please declare your identity so J.A.R.V.I.S. may calibrate speech synthesis and address you appropriately.
+            </p>
+
+            <input
+              type="text"
+              autoFocus
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              placeholder="Enter your name (e.g. Bharath)"
+              className="w-full rounded-xl border border-cyan-500/40 bg-black/60 px-4 py-3 font-mono text-center text-cyan-200 placeholder-slate-600 focus:border-cyan-400 focus:outline-none mb-5 text-base"
+            />
+
+            <button
+              type="submit"
+              className="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 py-3 font-orbitron text-xs font-bold tracking-widest text-black hover:brightness-110 shadow-[0_0_20px_rgba(0,243,255,0.4)]"
+            >
+              INITIALIZE JARVIS
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* API KEY CONFIGURATION MODAL */}
       {showKeyModal && (
@@ -397,11 +514,9 @@ export default function App() {
               API ACCESS SECURITY
             </h3>
             <p className="text-xs text-slate-400 mb-4 font-sans leading-relaxed">
-              To connect Jarvis to Google's Gemini 1.5 Flash brain for free:
+              Google Gemini 1.5 Flash API Key integration.
               <br />
-              1. Visit <a href="https://aistudio.google.com/" target="_blank" rel="noreferrer" className="text-cyan-400 underline">Google AI Studio</a>.
-              <br />
-              2. Click <strong>"Get API Key"</strong> and generate a free key.
+              Grab your free key at <a href="https://aistudio.google.com/" target="_blank" rel="noreferrer" className="text-cyan-400 underline">Google AI Studio</a>.
             </p>
 
             <input
@@ -426,7 +541,7 @@ export default function App() {
                 }}
                 className="rounded-xl bg-cyan-400 px-5 py-2 text-xs font-bold text-black hover:bg-cyan-300 shadow-[0_0_15px_rgba(0,243,255,0.4)]"
               >
-                ENGAGE LINK
+                SAVE & ENGAGE
               </button>
             </div>
           </div>

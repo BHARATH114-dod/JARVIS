@@ -1,15 +1,16 @@
 /**
  * Service to call Gemini API directly or via serverless function.
  */
-export async function askJarvis({ prompt, history = [], apiKey }) {
+export async function askJarvis({ prompt, history = [], apiKey, userName = "Sir" }) {
   if (!apiKey) {
     return {
-      text: "Sir, I require an active Google Gemini API key to operate at full intelligence. Please input your key in the top right settings panel.",
+      text: `${userName}, I require an active Google Gemini API key to operate at full intelligence. Please input your key in the top right settings panel.`,
       isKeyMissing: true,
     };
   }
 
   try {
+    const userTitle = userName || "Sir";
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
@@ -19,7 +20,7 @@ export async function askJarvis({ prompt, history = [], apiKey }) {
           system_instruction: {
             parts: [
               {
-                text: "You are J.A.R.V.I.S., a sophisticated, hyper-intelligent, polite AI assistant created for the user. Speak with high intellect, concise clarity, and classic British charm reminiscent of Tony Stark's AI Jarvis. Address the user with respect (e.g., 'Sir' or 'Certainly'). Assist with any programming, planning, reasoning, calculation, or conversational requests. Keep spoken responses punchy, concise and avoid overly verbose text when unnecessary."
+                text: `You are J.A.R.V.I.S., a sophisticated, hyper-intelligent, polite AI assistant created specifically for ${userTitle}. Speak with high intellect, concise clarity, and classic British charm reminiscent of Tony Stark's AI Jarvis. Always address the user as "${userTitle}" respectfully. Assist with any programming, planning, reasoning, calculation, or conversational requests. Keep spoken responses punchy, concise, helpful, and natural.`
               }
             ]
           },

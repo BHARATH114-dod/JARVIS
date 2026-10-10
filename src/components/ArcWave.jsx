@@ -90,7 +90,7 @@ export default function ArcWave({ state = "idle", audioLevel = 0 }) {
   }, [state, audioLevel]);
 
   return (
-    <div className="relative w-full h-44 sm:h-52 flex items-center justify-center overflow-hidden rounded-2xl border border-cyan-500/25 bg-black/40 backdrop-blur-xl shadow-[0_0_40px_rgba(0,243,255,0.12)]">
+    <div className="relative w-full h-28 sm:h-36 flex items-center justify-center overflow-hidden rounded-2xl border border-cyan-500/25 bg-black/50 backdrop-blur-xl shadow-[0_0_30px_rgba(0,243,255,0.12)]">
       {/* Background HUD Grid */}
       <div 
         className="pointer-events-none absolute inset-0 opacity-15"
