@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Mic, MicOff, Send, Volume2, VolumeX, Flame,
   Sparkles, User, Trash2, UserCheck, MessageSquare,
-  Plus, PanelLeftClose, PanelLeftOpen, Copy, Check, Zap, Cpu
+  Plus, PanelLeftClose, PanelLeftOpen, Copy, Check, Zap, Cpu, Radio, Headphones
 } from "lucide-react";
 import ArcWave from "./components/ArcWave";
 import FourDimensionalDiagram from "./components/FourDimensionalDiagram";
@@ -64,10 +64,25 @@ export default function App() {
   const [audioLevel, setAudioLevel] = useState(0);
   const [copiedId, setCopiedId] = useState(null);
 
+  // Continuous Hands-Free Voice Mode state
+  const [autoVoiceMode, setAutoVoiceMode] = useState(false);
+  const autoVoiceModeRef = useRef(false);
+  const statusRef = useRef("idle");
+  const checkMicVolumeRef = useRef(null);
+
+  useEffect(() => {
+    autoVoiceModeRef.current = autoVoiceMode;
+  }, [autoVoiceMode]);
+
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
   const chatEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const audioContextRef = useRef(null);
   const micStreamRef = useRef(null);
+  const startListeningRef = useRef(null);
 
   const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
   const messages = activeSession ? activeSession.messages : [];
@@ -178,15 +193,39 @@ export default function App() {
 
       utterance.onstart = () => {
         setStatus("speaking");
+        statusRef.current = "speaking";
         setAudioLevel(0.7);
+        // Anti-Echo Feedback Lock: Stop mic while Friday speaks to avoid self-triggering
+        if (recognitionRef.current) {
+          try { recognitionRef.current.stop(); } catch (e) {}
+        }
       };
       utterance.onend = () => {
         setStatus("idle");
+        statusRef.current = "idle";
         setAudioLevel(0);
+
+        // CONTINUOUS HANDS-FREE VOICE LOOP:
+        // Automatically re-arm microphone after speech concludes
+        if (autoVoiceModeRef.current) {
+          setTimeout(() => {
+            if (autoVoiceModeRef.current && statusRef.current === "idle") {
+              startListeningRef.current?.(true);
+            }
+          }, 450); // 450ms buffer prevents room acoustic echo feedback
+        }
       };
       utterance.onerror = () => {
         setStatus("idle");
+        statusRef.current = "idle";
         setAudioLevel(0);
+        if (autoVoiceModeRef.current) {
+          setTimeout(() => {
+            if (autoVoiceModeRef.current && statusRef.current === "idle") {
+              startListeningRef.current?.(true);
+            }
+          }, 450);
+        }
       };
 
       window.speechSynthesis.speak(utterance);
@@ -289,45 +328,47 @@ export default function App() {
     setTimeout(() => speakText(welcomeMsg), 300);
   };
 
-  // Speech Recognition (Microphone)
-  const toggleListening = async () => {
-    if (status === "listening") {
-      recognitionRef.current?.stop();
-      if (micStreamRef.current) {
-        micStreamRef.current.getTracks().forEach(track => track.stop());
-      }
-      setStatus("idle");
-      setAudioLevel(0);
+  // Speech Recognition (Microphone) - Manual & Hands-Free
+  const startListening = async (isAuto = false) => {
+    // Anti-Echo Protection: Do not listen while Friday is speaking or thinking
+    if (statusRef.current === "speaking" || statusRef.current === "thinking") {
       return;
     }
 
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRec) {
-      alert("Microphone speech recognition is supported in Chrome, Edge, Safari, and Brave.");
+      if (!isAuto) alert("Microphone speech recognition is supported in Chrome, Edge, Safari, and Brave.");
       return;
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      micStreamRef.current = stream;
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      audioContextRef.current = audioCtx;
-      const analyser = audioCtx.createAnalyser();
-      const source = audioCtx.createMediaStreamSource(stream);
-      source.connect(analyser);
-      analyser.fftSize = 64;
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) {}
+      }
 
-      const checkMicVolume = () => {
-        if (recognitionRef.current?.isListening) {
-          analyser.getByteFrequencyData(dataArray);
-          let sum = 0;
-          for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-          const avg = sum / dataArray.length;
-          setAudioLevel(Math.min(1, avg / 110));
-          requestAnimationFrame(checkMicVolume);
-        }
-      };
+      if (!micStreamRef.current) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        micStreamRef.current = stream;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        audioContextRef.current = audioCtx;
+        const analyser = audioCtx.createAnalyser();
+        const source = audioCtx.createMediaStreamSource(stream);
+        source.connect(analyser);
+        analyser.fftSize = 64;
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        const checkMicVolume = () => {
+          if (recognitionRef.current?.isListening) {
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+            const avg = sum / dataArray.length;
+            setAudioLevel(Math.min(1, avg / 110));
+            requestAnimationFrame(checkMicVolume);
+          }
+        };
+        checkMicVolumeRef.current = checkMicVolume;
+      }
 
       const recognition = new SpeechRec();
       recognitionRef.current = recognition;
@@ -338,12 +379,16 @@ export default function App() {
       recognition.onstart = () => {
         recognition.isListening = true;
         setStatus("listening");
-        checkMicVolume();
+        statusRef.current = "listening";
+        if (checkMicVolumeRef.current) checkMicVolumeRef.current();
       };
 
       recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
-        if (transcript) {
+        if (transcript && transcript.trim()) {
+          try { recognition.stop(); } catch (e) {}
+          setStatus("thinking");
+          statusRef.current = "thinking";
           setInput(transcript);
           handleSend(transcript);
         }
@@ -351,17 +396,41 @@ export default function App() {
 
       recognition.onend = () => {
         recognition.isListening = false;
-        if (status === "listening") setStatus("idle");
-        setAudioLevel(0);
-        stream.getTracks().forEach(track => track.stop());
+        // In Auto Voice mode: If recognition times out due to silence, automatically restart!
+        if (autoVoiceModeRef.current && statusRef.current === "listening") {
+          setTimeout(() => {
+            if (autoVoiceModeRef.current && statusRef.current === "listening") {
+              startListening(true);
+            }
+          }, 350);
+        } else if (statusRef.current === "listening") {
+          setStatus("idle");
+          statusRef.current = "idle";
+          setAudioLevel(0);
+        }
       };
 
       recognition.onerror = (event) => {
-        console.warn("Speech recognition error:", event?.error);
+        console.warn("Speech recognition notice:", event?.error);
+        if (event?.error === "no-speech") {
+          if (autoVoiceModeRef.current && statusRef.current === "listening") {
+            setTimeout(() => {
+              if (autoVoiceModeRef.current && statusRef.current === "listening") {
+                startListening(true);
+              }
+            }, 350);
+            return;
+          }
+        }
         recognition.isListening = false;
-        setStatus("idle");
+        if (statusRef.current === "listening") {
+          setStatus("idle");
+          statusRef.current = "idle";
+        }
         setAudioLevel(0);
         if (event?.error === "not-allowed" || event?.error === "service-not-allowed") {
+          setAutoVoiceMode(false);
+          autoVoiceModeRef.current = false;
           alert("Microphone permission was blocked. Please tap the lock / settings icon next to the URL in your browser and allow Microphone access.");
         }
       };
@@ -369,7 +438,47 @@ export default function App() {
       recognition.start();
     } catch (err) {
       console.error("Microphone error:", err);
-      alert("Please grant microphone permissions to speak with F.R.I.D.A.Y.");
+      if (!isAuto) alert("Please grant microphone permissions to speak with F.R.I.D.A.Y.");
+    }
+  };
+
+  startListeningRef.current = startListening;
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch (e) {}
+    }
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach(track => track.stop());
+      micStreamRef.current = null;
+    }
+    setStatus("idle");
+    statusRef.current = "idle";
+    setAudioLevel(0);
+  };
+
+  const toggleListening = () => {
+    if (status === "listening") {
+      stopListening();
+    } else {
+      startListening(false);
+    }
+  };
+
+  // Toggle Hands-Free Continuous Voice Mode
+  const toggleAutoVoiceMode = () => {
+    const nextMode = !autoVoiceMode;
+    setAutoVoiceMode(nextMode);
+    autoVoiceModeRef.current = nextMode;
+
+    if (nextMode) {
+      const confirmText = language === "te"
+        ? "హ్యాండ్స్-ఫ్రీ వాయిస్ మోడ్ ఆన్ చేయబడింది. మాట్లాడండి."
+        : "Hands-free voice mode active. Speak anytime, Boss.";
+      speakText(confirmText, voiceGenderRef.current);
+    } else {
+      window.speechSynthesis.cancel();
+      stopListening();
     }
   };
 
@@ -559,6 +668,30 @@ export default function App() {
           {/* Action HUD Controls */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             
+            {/* HANDS-FREE CONTINUOUS CONVERSATION TOGGLE */}
+            <button
+              onClick={toggleAutoVoiceMode}
+              className={`flex items-center gap-1 sm:gap-1.5 rounded-lg border px-2 sm:px-2.5 py-1 font-mono text-[11px] sm:text-xs transition active:scale-95 ${
+                autoVoiceMode
+                  ? "border-emerald-500/70 bg-emerald-950/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.35)] animate-pulse font-bold"
+                  : "border-neutral-800 bg-black/40 text-neutral-400 hover:border-emerald-500/30 hover:text-emerald-300"
+              }`}
+              title="Continuous Hands-Free Conversation: Speak anytime without clicking the mic button"
+            >
+              <Radio size={13} className={autoVoiceMode ? "text-emerald-400 animate-ping" : "text-neutral-500"} />
+              <span className="font-semibold uppercase">
+                {autoVoiceMode ? (
+                  <>
+                    <span className="hidden sm:inline">HANDS-FREE: </span>ON
+                  </>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">HANDS-FREE: </span>OFF
+                  </>
+                )}
+              </span>
+            </button>
+
             {/* MANUAL VOICE GENDER SWITCHER: FEMALE (FRIDAY) / MALE (JARVIS) */}
             <button
               onClick={toggleVoiceGender}
@@ -710,21 +843,49 @@ export default function App() {
         {/* BOTTOM COMMAND DOCK WITH OPTIMIZED HARMONIC WAVE */}
         <div className="relative z-20 border-t border-red-500/15 bg-[#080204]/90 p-2 sm:p-3 sm:px-8 backdrop-blur-2xl pb-[max(0.75rem,env(safe-area-inset-bottom))] shrink-0">
           <div className="max-w-4xl mx-auto space-y-1.5 sm:space-y-2">
+            
+            {/* Hands-Free Mode Glowing Status Ribbon */}
+            {autoVoiceMode && (
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-emerald-950/60 border border-emerald-500/40 px-3 py-1.5 font-mono text-[11px] text-emerald-300 shadow-[0_0_16px_rgba(16,185,129,0.25)] animate-pulse">
+                <div className="flex items-center gap-2 truncate">
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="font-semibold tracking-wider truncate">
+                    HANDS-FREE MODE ACTIVE // SPEAK FREELY WITHOUT CLICKING
+                  </span>
+                </div>
+                <button
+                  onClick={toggleAutoVoiceMode}
+                  className="shrink-0 rounded bg-emerald-900/50 hover:bg-emerald-800/60 px-2 py-0.5 text-[10px] text-emerald-200 transition border border-emerald-500/30 font-bold"
+                  title="Pause Hands-Free Voice Mode"
+                >
+                  PAUSE
+                </button>
+              </div>
+            )}
+
             <ArcWave state={status} audioLevel={audioLevel} />
 
             {/* Input Bar */}
             <div className="relative flex items-center gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl border border-red-500/25 bg-black/85 p-1.5 sm:p-2 shadow-[0_0_25px_rgba(220,38,38,0.1)]">
               {/* Mic Button */}
               <button
-                onClick={toggleListening}
+                onClick={autoVoiceMode ? toggleAutoVoiceMode : toggleListening}
                 className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg sm:rounded-xl border transition-all active:scale-95 ${
-                  status === "listening"
+                  autoVoiceMode
+                    ? "border-emerald-500 bg-emerald-950/60 text-emerald-300 shadow-[0_0_18px_rgba(16,185,129,0.45)] animate-pulse"
+                    : status === "listening"
                     ? "border-red-500 bg-red-600/30 text-red-300 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]"
                     : "border-red-500/30 bg-red-950/20 text-red-300 hover:border-red-400 hover:bg-red-900/30"
                 }`}
-                title={language === "te" ? "తెలుగులో మాట్లాడండి" : "Speak to F.R.I.D.A.Y."}
+                title={
+                  autoVoiceMode
+                    ? "Hands-Free Voice Mode Active (Click to pause)"
+                    : language === "te"
+                    ? "తెలుగులో మాట్లాడండి"
+                    : "Speak to F.R.I.D.A.Y."
+                }
               >
-                {status === "listening" ? <MicOff size={18} /> : <Mic size={18} />}
+                {status === "listening" || autoVoiceMode ? <MicOff size={18} /> : <Mic size={18} />}
               </button>
 
               {/* Text Input (16px base font size avoids unwanted iOS Safari zooming) */}
@@ -734,7 +895,9 @@ export default function App() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder={
-                  status === "listening"
+                  autoVoiceMode
+                    ? (language === "te" ? "🎙️ హ్యాండ్స్-ఫ్రీ ఆన్‌లో ఉంది... నేరుగా మాట్లాడండి..." : "🎙️ Hands-free mode active... just speak to Friday!")
+                    : status === "listening"
                     ? (language === "te" ? "వాయిస్ వింటున్నాను... మాట్లాడండి..." : "Listening to audio feed... speak now")
                     : (language === "te" ? `ఫ్రైడేను అడగండి, ${userName || "గారు"}...` : `Give your orders, ${userName || (voiceGender === "female" ? "Boss" : "Sir")}...`)
                 }
