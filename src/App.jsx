@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Mic, MicOff, Send, Volume2, VolumeX, Flame,
   Sparkles, User, Trash2, UserCheck, MessageSquare,
-  Plus, PanelLeftClose, PanelLeftOpen, Copy, Check, Zap, Cpu, Radio, Headphones
+  Plus, PanelLeftClose, PanelLeftOpen, Copy, Check, Zap, Cpu, Radio, Headphones, ExternalLink
 } from "lucide-react";
 import ArcWave from "./components/ArcWave";
 import FourDimensionalDiagram from "./components/FourDimensionalDiagram";
 import { askFriday } from "./services/gemini";
+import { detectMobileAppIntent, triggerMobileLaunch, SUPPORTED_MOBILE_APPS } from "./utils/mobileLauncher";
 
 export default function App() {
   // User Profile
@@ -509,6 +510,39 @@ export default function App() {
     setInput("");
     setStatus("thinking");
 
+    // Check for Mobile App Launch Intent (Deep-Linking)
+    const mobileIntent = detectMobileAppIntent(trimmed, language);
+    if (mobileIntent) {
+      const aiMsg = {
+        id: Date.now() + 1,
+        role: "ai",
+        text: mobileIntent.replyText,
+        actionUrl: mobileIntent.launchUrl,
+        appName: mobileIntent.app.name,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      setSessions(prev => prev.map(s => {
+        if (s.id === activeSessionId) {
+          return { ...s, messages: [...s.messages, aiMsg] };
+        }
+        return s;
+      }));
+
+      setStatus("idle");
+
+      if (soundEnabled) {
+        speakText(mobileIntent.replyText, voiceGenderRef.current);
+      }
+
+      // Automatically launch native mobile application
+      setTimeout(() => {
+        triggerMobileLaunch(mobileIntent.launchUrl);
+      }, 350);
+
+      return;
+    }
+
     const reply = await askFriday({
       prompt: trimmed,
       history: messages,
@@ -586,6 +620,26 @@ export default function App() {
             <Plus size={16} />
             <span>NEW MISSION</span>
           </button>
+        </div>
+
+        {/* Mobile App Quick Launch Panel */}
+        <div className="px-3 pb-2 shrink-0">
+          <div className="px-1 py-1 font-mono text-[9px] text-neutral-500 uppercase tracking-widest flex items-center justify-between">
+            <span>Mobile App Links</span>
+            <span className="text-[8px] text-red-400/80">Tap to Open</span>
+          </div>
+          <div className="grid grid-cols-4 gap-1.5 pt-1">
+            {SUPPORTED_MOBILE_APPS.slice(0, 4).map((app) => (
+              <button
+                key={app.id}
+                onClick={() => triggerMobileLaunch(app.webUrl)}
+                className="flex flex-col items-center justify-center p-1.5 rounded-lg border border-red-500/20 bg-red-950/20 hover:bg-red-900/30 text-[10px] font-mono text-red-200 transition active:scale-95"
+                title={`Launch ${app.name}`}
+              >
+                <span className="truncate">{app.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* History List */}
@@ -816,6 +870,21 @@ export default function App() {
                   <div className="whitespace-pre-wrap leading-relaxed text-xs sm:text-[14.5px] font-sans selection:bg-red-500/30">
                     {msg.text}
                   </div>
+
+                  {msg.actionUrl && (
+                    <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between gap-2">
+                      <a
+                        href={msg.actionUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 hover:brightness-110 px-3.5 py-1.5 font-mono text-xs text-white font-semibold shadow-[0_0_15px_rgba(220,38,38,0.3)] transition active:scale-95"
+                      >
+                        <span>Open {msg.appName || "App"}</span>
+                        <ExternalLink size={13} />
+                      </a>
+                      <span className="text-[10px] font-mono text-neutral-400">Mobile Deep-Link</span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
