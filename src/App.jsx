@@ -86,7 +86,10 @@ export default function App() {
     localStorage.setItem("friday_lang", language);
   }, [language]);
 
+  const voiceGenderRef = useRef(voiceGender);
+
   useEffect(() => {
+    voiceGenderRef.current = voiceGender;
     localStorage.setItem("friday_voice_gender", voiceGender);
   }, [voiceGender]);
 
@@ -107,10 +110,12 @@ export default function App() {
   };
 
   // Text-To-Speech engine with dynamic Female (Friday) & Male (Jarvis) profiles
-  const speakText = useCallback((text, forcedGender = voiceGender) => {
+  const speakText = useCallback((text, forcedGender) => {
     if (!soundEnabled || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
 
+    const activeGender = forcedGender || voiceGenderRef.current;
+    const isMaleMode = activeGender === "male";
     const clean = prepareSpeechText(text).slice(0, 480);
     const utterance = new SpeechSynthesisUtterance(clean);
 
@@ -118,55 +123,55 @@ export default function App() {
       const voices = window.speechSynthesis.getVoices();
       if (!voices || voices.length === 0) return;
 
-      const isFemaleMode = forcedGender === "female";
-
       if (language === "te") {
-        // Telugu Voice
-        const teluguVoice = voices.find(v => {
-          const l = v.lang.toLowerCase();
-          const n = v.name.toLowerCase();
-          const matchesLang = l.includes("te") || l.includes("tel");
-          if (!matchesLang) return false;
-          return isFemaleMode ? (n.includes("female") || !n.includes("male")) : (n.includes("male") || !n.includes("female"));
-        }) || voices.find(v => v.lang.toLowerCase().includes("te"));
-
-        if (teluguVoice) utterance.voice = teluguVoice;
+        // Telugu Speech Synthesis
+        const teluguVoices = voices.filter(v => v.lang.toLowerCase().includes("te") || v.lang.toLowerCase().includes("tel"));
+        if (teluguVoices.length > 0) {
+          utterance.voice = teluguVoices[0];
+        }
         utterance.lang = "te-IN";
-        utterance.pitch = isFemaleMode ? 1.08 : 0.85;
+        utterance.pitch = isMaleMode ? 0.72 : 1.15;
         utterance.rate = 1.0;
       } else {
-        // English Voice: Choose between Friday (Female) and Jarvis (Male)
-        if (isFemaleMode) {
-          // FEMALE (F.R.I.D.A.Y. - Kerry Condon Irish/British tone)
-          const femaleKeywords = ["female", "zira", "hazel", "susan", "catherine", "victoria", "linda", "jenny", "samantha", "karen", "serena", "aria", "ava", "fiona"];
-          
-          const irishFemale = voices.find(v => (v.lang === "en-IE" || v.lang.includes("IE")) && femaleKeywords.some(k => v.name.toLowerCase().includes(k)));
-          const britishFemale = voices.find(v => (v.lang === "en-GB" || v.lang.includes("GB") || v.name.toLowerCase().includes("uk")) && femaleKeywords.some(k => v.name.toLowerCase().includes(k)));
-          const generalFemale = voices.find(v => v.lang.startsWith("en") && femaleKeywords.some(k => v.name.toLowerCase().includes(k)));
-          const fallbackEnFemale = voices.find(v => (v.lang === "en-GB" || v.lang === "en-IE")) || voices.find(v => v.lang.startsWith("en"));
+        // English Speech Synthesis
+        const englishVoices = voices.filter(v => v.lang.toLowerCase().startsWith("en"));
 
-          const chosen = irishFemale || britishFemale || generalFemale || fallbackEnFemale;
-          if (chosen) utterance.voice = chosen;
+        // Known Male Voice Identifiers (Windows: David, Mark, George; Mac/iOS: Daniel, Oliver; Android/Chrome: Guy, Male)
+        const MALE_KEYWORDS = ["david", "mark", "george", "guy", "ryan", "oliver", "daniel", "james", "arthur", "richard", "christopher", "thomas", "male", "jarvis", "bernard"];
 
-          utterance.lang = chosen?.lang || "en-GB";
-          utterance.pitch = 1.08; // Elegant feminine pitch
-          utterance.rate = 1.02;  // Fluid natural pacing
+        // Known Female Voice Identifiers (Windows: Zira, Hazel, Susan; Mac/iOS: Samantha, Victoria, Karen; Android/Chrome: Google US English)
+        const FEMALE_KEYWORDS = ["zira", "hazel", "susan", "catherine", "victoria", "linda", "jenny", "samantha", "karen", "serena", "aria", "ava", "fiona", "eva", "stacy", "zoe", "female", "google us english", "google uk english female"];
+
+        if (isMaleMode) {
+          // 1. Explicit male name match (Microsoft David on Windows, Microsoft Mark, Daniel on Mac)
+          const maleVoice = englishVoices.find(v => {
+            const nl = v.name.toLowerCase();
+            return MALE_KEYWORDS.some(k => nl.includes(k));
+          }) || englishVoices.find(v => {
+            // 2. Any voice that does not contain known female keywords
+            const nl = v.name.toLowerCase();
+            return !FEMALE_KEYWORDS.some(k => nl.includes(k));
+          }) || englishVoices[0];
+
+          if (maleVoice) utterance.voice = maleVoice;
+          utterance.lang = maleVoice?.lang || "en-US";
+          // Deep pitch guarantees distinct masculine tone on every synthesizer
+          utterance.pitch = 0.76;
+          utterance.rate = 1.0;
         } else {
-          // MALE (J.A.R.V.I.S. - Paul Bettany style)
-          const femaleKeywords = ["female", "zira", "hazel", "susan", "catherine", "victoria", "linda", "jenny", "samantha", "karen", "serena", "aria", "ava", "fiona"];
-          const isNotFemale = (v) => !femaleKeywords.some(k => v.name.toLowerCase().includes(k));
+          // 1. Explicit female name match (Microsoft Zira, Google US English, Samantha)
+          const femaleVoice = englishVoices.find(v => {
+            const nl = v.name.toLowerCase();
+            return FEMALE_KEYWORDS.some(k => nl.includes(k)) || nl.includes("female");
+          }) || englishVoices.find(v => {
+            const nl = v.name.toLowerCase();
+            return !MALE_KEYWORDS.some(k => nl.includes(k));
+          }) || englishVoices[0];
 
-          const britishMale = voices.find(v => 
-            (v.lang === "en-GB" || v.lang.includes("GB") || v.name.toLowerCase().includes("uk")) &&
-            isNotFemale(v) &&
-            (v.name.toLowerCase().includes("male") || v.name.toLowerCase().includes("george") || v.name.toLowerCase().includes("david") || v.name.toLowerCase().includes("ryan") || v.name.toLowerCase().includes("oliver"))
-          ) || voices.find(v => (v.lang === "en-GB" || v.lang.includes("GB")) && isNotFemale(v))
-            || voices.find(v => v.name.toLowerCase().includes("male") && isNotFemale(v))
-            || voices.find(v => v.lang.startsWith("en") && isNotFemale(v));
-
-          if (britishMale) utterance.voice = britishMale;
-          utterance.lang = "en-GB";
-          utterance.pitch = 0.86; // Deep masculine tone
+          if (femaleVoice) utterance.voice = femaleVoice;
+          utterance.lang = femaleVoice?.lang || "en-GB";
+          // Higher pitch for graceful feminine Friday tone
+          utterance.pitch = 1.15;
           utterance.rate = 1.02;
         }
       }
@@ -192,17 +197,18 @@ export default function App() {
     } else {
       applyVoice();
     }
-  }, [soundEnabled, language, voiceGender]);
+  }, [soundEnabled, language]);
 
   // Toggle voice gender manually between Female (Friday) and Male (Jarvis)
   const toggleVoiceGender = () => {
-    const nextGender = voiceGender === "female" ? "male" : "female";
+    const nextGender = voiceGenderRef.current === "female" ? "male" : "female";
+    voiceGenderRef.current = nextGender;
     setVoiceGender(nextGender);
 
     if (soundEnabled) {
       const confirmText = nextGender === "female"
-        ? (language === "te" ? "ఫ్రైడే వాయిస్ ప్రొఫైల్ యాక్టివేట్ చేయబడింది." : "F.R.I.D.A.Y. voice profile calibrated, Boss.")
-        : (language === "te" ? "జార్విస్ వాయిస్ ప్రొఫైల్ యాక్టివేట్ చేయబడింది." : "Jarvis tactical voice calibrated, Sir.");
+        ? (language === "te" ? "ఫ్రైడే వాయిస్ ప్రొఫైల్ యాక్టివేట్ చేయబడింది." : "F.R.I.D.A.Y. voice online. How may I help you, Boss?")
+        : (language === "te" ? "జార్విస్ వాయిస్ ప్రొఫైల్ యాక్టివేట్ చేయబడింది." : "Jarvis tactical voice online. Standing by for your command, Sir.");
       speakText(confirmText, nextGender);
     }
   };
@@ -397,9 +403,9 @@ export default function App() {
     const reply = await askFriday({
       prompt: trimmed,
       history: messages,
-      userName: userName || (voiceGender === "female" ? "Boss" : "Sir"),
+      userName: userName || (voiceGenderRef.current === "female" ? "Boss" : "Sir"),
       language: language,
-      voiceGender: voiceGender,
+      voiceGender: voiceGenderRef.current,
     });
 
     const aiMsg = {
@@ -419,7 +425,7 @@ export default function App() {
     setStatus("idle");
 
     if (soundEnabled) {
-      speakText(reply.text);
+      speakText(reply.text, voiceGenderRef.current);
     }
   };
 
