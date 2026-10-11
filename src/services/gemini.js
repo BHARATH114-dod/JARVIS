@@ -1,8 +1,17 @@
 /**
- * Service to call Gemini API directly using gemini-3.8-flash.
- * Tailored for F.R.I.D.A.Y. (Female Replacement Intelligent Digital Assistant Youth)
- * with support for both Female (Kerry Condon style) and Male voice personas.
+ * Service to call Gemini API directly with multi-model fallback and speed optimization.
+ * Tailored for F.R.I.D.A.Y. (Female Replacement Intelligent Digital Assistant Youth).
  */
+
+// Model priority cascade: Lightning fast models first, with automatic failover
+const FAST_MODEL_CASCADE = [
+  "gemini-3.5-flash-lite", // ~1.5s ultra-fast, rock-solid availability
+  "gemini-3.5-flash",      // high reliability fallback
+  "gemini-3.6-flash",      // secondary fallback
+  "gemini-3.7-flash",      // tertiary fallback
+  "gemini-3.8-flash",      // final fallback
+];
+
 export async function askFriday({
   prompt,
   history = [],
@@ -13,89 +22,102 @@ export async function askFriday({
 }) {
   const activeKey =
     (apiKey && apiKey.trim()) ||
-    import.meta.env.VITE_GEMINI_API_KEY;
+    import.meta.env.VITE_GEMINI_API_KEY ||
+    (typeof localStorage !== "undefined" && localStorage.getItem("friday_api_key"));
 
   if (!activeKey) {
     return {
-      text: `Apologies, ${userName || "Boss"}. The GEMINI API key is not configured in the neural matrix.`,
+      text: `Apologies, ${userName || "Boss"}. The GEMINI API key is not configured in your environment variables.`,
       error: true,
     };
   }
 
-  try {
-    const userTitle = userName || (voiceGender === "female" ? "Boss" : "Sir");
+  const userTitle = userName || (voiceGender === "female" ? "Boss" : "Sir");
 
-    let personaInstruction = "";
-    if (voiceGender === "female") {
-      personaInstruction = `You are F.R.I.D.A.Y. (Female Replacement Intelligent Digital Assistant Youth), Tony Stark's tactical AI assistant from the Marvel Cinematic Universe (played by Kerry Condon). You address the user warmly and respectfully as '${userTitle}' or 'Boss'. You have a subtle, elegant Irish/British warmth, razor-sharp tactical intelligence, loyalty, and wit.`;
-    } else {
-      personaInstruction = `You are F.R.I.D.A.Y. operating in tactical J.A.R.V.I.S. male protocol, Tony Stark's legendary AI (Paul Bettany style). You address the user respectfully as '${userTitle}' or 'Sir'. You speak with refined, confident British eloquence.`;
-    }
+  let personaInstruction = "";
+  if (voiceGender === "female") {
+    personaInstruction = `You are F.R.I.D.A.Y. (Female Replacement Intelligent Digital Assistant Youth), Tony Stark's tactical AI assistant from Marvel (played by Kerry Condon). Address the user as '${userTitle}' or 'Boss'. You have a warm, quick-witted, loyal, and tactical personality. Keep answers fast, concise, punchy, and helpful.`;
+  } else {
+    personaInstruction = `You are F.R.I.D.A.Y. in tactical J.A.R.V.I.S. male protocol, Tony Stark's AI (Paul Bettany style). Address the user as '${userTitle}' or 'Sir'. You speak with refined, confident British eloquence. Keep answers fast, concise, punchy, and helpful.`;
+  }
 
-    const languageInstruction =
-      language === "te"
-        ? `LANGUAGE REQUIREMENT: Respond in natural, polite, respectful TELUGU (తెలుగు) using standard Telugu script or smooth conversational Telugu. Maintain a respectful, sophisticated tone (calling the user by name or respectful Telugu phrasing like 'గారు' / '${userTitle}').`
-        : `LANGUAGE REQUIREMENT: Respond in natural, fluid ENGLISH with your distinct character persona. Pronounce your name naturally as "Friday".`;
+  const languageInstruction =
+    language === "te"
+      ? `Respond in natural, polite TELUGU (తెలుగు) script. Keep sentences clear, crisp, and conversational.`
+      : `Respond in natural, conversational ENGLISH. Pronounce your name naturally as "Friday". Keep replies crisp, sharp, and concise.`;
 
-    // Active working model: gemini-3.8-flash
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${activeKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [
-              {
-                text: `${personaInstruction}
+  const requestPayload = {
+    system_instruction: {
+      parts: [
+        {
+          text: `${personaInstruction}
 
 ${languageInstruction}
 
-CORE PROTOCOLS:
-1. Always remain composed, intelligent, supportive, and lightning-fast.
-2. If in English, pronounce your name naturally as "Friday". Use natural tactical phrases ("Right away, ${userTitle}", "Diagnostics optimal", "Ready when you are, Boss").
-3. If in Telugu, respond clearly in elegant, easy-to-understand Telugu without stiff robotic phrasing.
-4. Keep spoken responses crisp, insightful, helpful, and concise. Avoid cluttered text so the user can easily read on mobile or desktop.
-5. Provide top-tier assistance for programming, concepts, studies, logic, daily tasks, and reasoning.`
-              }
-            ]
-          },
-          contents: [
-            ...history.slice(-6).map((msg) => ({
-              role: msg.role === "ai" ? "model" : "user",
-              parts: [{ text: msg.text }]
-            })),
-            {
-              role: "user",
-              parts: [{ text: prompt }]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1000,
-          }
-        })
+CORE RULES:
+1. SPEED & BREVITY: Answer promptly. Give direct, high-value answers without rambling so voice synthesis speaks quickly.
+2. TACTICAL TONE: Friendly, loyal, and intelligent.
+3. CONVERSATIONAL: Avoid excessive bullet points unless specifically requested.`
+        }
+      ]
+    },
+    contents: [
+      ...history.slice(-4).map((msg) => ({
+        role: msg.role === "ai" ? "model" : "user",
+        parts: [{ text: msg.text }]
+      })),
+      {
+        role: "user",
+        parts: [{ text: prompt }]
       }
-    );
-
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.error?.message || `API Error: ${response.status}`);
+    ],
+    generationConfig: {
+      temperature: 0.65,
+      maxOutputTokens: 350, // Tuned for rapid sub-2s generation and quick speech
     }
+  };
 
-    const data = await response.json();
-    const reply =
-      data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "Tactical matrix active, but no telemetry response was returned.";
-    return { text: reply };
-  } catch (error) {
-    console.error("F.R.I.D.A.Y. API error:", error);
-    return {
-      text: `Apologies, ${userName || "Boss"}. An error was encountered while communicating with the neural matrix: ${error.message}`,
-      error: true
-    };
+  // Try each model in cascade to eliminate 503 "High Demand" errors
+  let lastErrorMessage = "";
+
+  for (const modelName of FAST_MODEL_CASCADE) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestPayload)
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (reply && reply.trim()) {
+          return { text: reply.trim(), modelUsed: modelName };
+        }
+      }
+
+      // Check if it's a 503 high demand or 429 rate limit error
+      const errData = await response.json().catch(() => ({}));
+      const errMsg = errData.error?.message || `HTTP ${response.status}`;
+      console.warn(`[F.R.I.D.A.Y.] Model ${modelName} returned: ${errMsg}. Failing over to next model...`);
+      lastErrorMessage = errMsg;
+
+      // If it's a 503 or 429 or 404, immediately continue loop to next model in cascade
+    } catch (networkError) {
+      console.warn(`[F.R.I.D.A.Y.] Network error with ${modelName}:`, networkError.message);
+      lastErrorMessage = networkError.message;
+    }
   }
+
+  // If all models failed in the cascade
+  console.error("All F.R.I.D.A.Y. fallback models exhausted. Last error:", lastErrorMessage);
+  return {
+    text: `Apologies, ${userTitle}. Telemetry servers are experiencing temporary interference (${lastErrorMessage}). Re-routing matrix, please try your command once more.`,
+    error: true
+  };
 }
 
-// Backwards-compatibility alias
 export const askJarvis = askFriday;
