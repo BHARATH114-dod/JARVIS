@@ -11,13 +11,14 @@ export default function ArcWave({ state = "idle", audioLevel = 0 }) {
     let phase = 0;
 
     const render = () => {
-      const width = (canvas.width = canvas.offsetWidth * window.devicePixelRatio);
-      const height = (canvas.height = canvas.offsetHeight * window.devicePixelRatio);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const width = (canvas.width = Math.floor(canvas.offsetWidth * dpr));
+      const height = (canvas.height = Math.floor(canvas.offsetHeight * dpr));
       ctx.clearRect(0, 0, width, height);
 
       const centerY = height / 2;
-      const baseAmp = state === "speaking" ? 36 : state === "listening" ? 30 : state === "thinking" ? 18 : 8;
-      const dynamicAmp = baseAmp + (audioLevel * 60);
+      const baseAmp = (state === "speaking" ? 28 : state === "listening" ? 24 : state === "thinking" ? 14 : 6) * dpr;
+      const dynamicAmp = baseAmp + (audioLevel * 45 * dpr);
 
       // Iron Man Stark Gold & Crimson Harmonic Sine Waves
       const waveConfigs = [
@@ -82,7 +83,7 @@ export default function ArcWave({ state = "idle", audioLevel = 0 }) {
   }, [state, audioLevel]);
 
   return (
-    <div className="relative w-full h-24 sm:h-28 flex items-center justify-center overflow-hidden rounded-2xl border border-amber-500/30 bg-[#0d0407]/70 backdrop-blur-xl shadow-[0_0_30px_rgba(255,183,3,0.12)]">
+    <div className="relative w-full h-16 sm:h-22 flex items-center justify-center overflow-hidden rounded-xl sm:rounded-2xl border border-amber-500/25 bg-[#0d0407]/80 backdrop-blur-md shadow-[0_0_20px_rgba(255,183,3,0.1)]">
       {/* Stark Grid Overlay */}
       <div 
         className="pointer-events-none absolute inset-0 opacity-10"
