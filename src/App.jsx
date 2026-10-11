@@ -350,10 +350,14 @@ export default function App() {
         stream.getTracks().forEach(track => track.stop());
       };
 
-      recognition.onerror = () => {
+      recognition.onerror = (event) => {
+        console.warn("Speech recognition error:", event?.error);
         recognition.isListening = false;
         setStatus("idle");
         setAudioLevel(0);
+        if (event?.error === "not-allowed" || event?.error === "service-not-allowed") {
+          alert("Microphone permission was blocked. Please tap the lock / settings icon next to the URL in your browser and allow Microphone access.");
+        }
       };
 
       recognition.start();
