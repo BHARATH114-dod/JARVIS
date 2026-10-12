@@ -3,7 +3,7 @@ import {
   Mic, MicOff, Send, Volume2, VolumeX, Flame,
   Sparkles, User, Trash2, UserCheck, MessageSquare,
   Plus, PanelLeftClose, PanelLeftOpen, Copy, Check, Zap, Cpu, Radio, Headphones, ExternalLink,
-  Sun, Moon
+  Sun, Moon, Image as ImageIcon, X as CloseIcon, Eye
 } from "lucide-react";
 import ArcWave from "./components/ArcWave";
 import FourDimensionalDiagram from "./components/FourDimensionalDiagram";
@@ -92,6 +92,11 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [audioLevel, setAudioLevel] = useState(0);
   const [copiedId, setCopiedId] = useState(null);
+
+  // Optical Telemetry (Multimodal Image Input)
+  const [stagedImage, setStagedImage] = useState(null); // { previewUrl, base64, mimeType, name, size }
+  const [previewModalImage, setPreviewModalImage] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Continuous Hands-Free Voice Mode state
   const [autoVoiceMode, setAutoVoiceMode] = useState(false);
@@ -517,24 +522,103 @@ export default function App() {
     }
   };
 
+  // Optical Telemetry Upload & Processing
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processImageFile(file);
+    e.target.value = "";
+  };
+
+  const processImageFile = (file) => {
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file (JPEG, PNG, WEBP, GIF, SVG).");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target.result;
+      const img = new Image();
+      img.onload = () => {
+        // High-definition canvas compression to maximize speed and eliminate lag
+        const MAX_DIM = 1600;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const targetMime = file.type === "image/png" ? "image/png" : "image/jpeg";
+        const compressedDataUrl = canvas.toDataURL(targetMime, 0.88);
+
+        const sizeInKB = Math.round((compressedDataUrl.length * 3 / 4) / 1024);
+        const sizeFormatted = sizeInKB > 1024 ? `${(sizeInKB / 1024).toFixed(1)} MB` : `${sizeInKB} KB`;
+
+        setStagedImage({
+          previewUrl: compressedDataUrl,
+          base64: compressedDataUrl,
+          mimeType: targetMime,
+          name: file.name,
+          size: sizeFormatted
+        });
+
+        if (soundEnabled) {
+          speakText(
+            language === "te"
+              ? "చిత్రం ఫీడ్ అనుసంధానించబడింది. మీ ప్రశ్నను అడగండి."
+              : "Optical telemetry received. Standing by for your instructions, Boss."
+          );
+        }
+      };
+      img.onerror = () => {
+        alert("Failed to process optical image file.");
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Submit Prompt to F.R.I.D.A.Y.
   const handleSend = async (userPrompt = input) => {
     const trimmed = userPrompt.trim();
-    if (!trimmed || status === "thinking") return;
+    if ((!trimmed && !stagedImage) || status === "thinking") return;
+
+    const currentImage = stagedImage;
+    setStagedImage(null);
+
+    const promptToSend = trimmed || (currentImage
+      ? (language === "te" ? "దయచేసి ఈ చిత్రాన్ని విశ్లేషించి వివరంగా వివరించండి." : "Analyze this optical feed, verify its content, and break down what you observe.")
+      : "");
 
     const newMsg = {
       id: Date.now(),
       role: "user",
-      text: trimmed,
+      text: promptToSend,
+      image: currentImage ? currentImage.previewUrl : null,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
     setSessions(prev => prev.map(s => {
       if (s.id === activeSessionId) {
         const firstUser = s.messages.filter(m => m.role === "user").length === 0;
+        const chatTitle = trimmed || (currentImage ? "Optical Telemetry" : "Mission");
         return {
           ...s,
-          title: firstUser ? trimmed.slice(0, 24) + (trimmed.length > 24 ? "..." : "") : s.title,
+          title: firstUser ? chatTitle.slice(0, 24) + (chatTitle.length > 24 ? "..." : "") : s.title,
           messages: [...s.messages, newMsg]
         };
       }
@@ -544,41 +628,47 @@ export default function App() {
     setInput("");
     setStatus("thinking");
 
-    // Check for Mobile App Launch Intent (Deep-Linking)
-    const mobileIntent = detectMobileAppIntent(trimmed, language);
-    if (mobileIntent) {
-      const aiMsg = {
-        id: Date.now() + 1,
-        role: "ai",
-        text: mobileIntent.replyText,
-        actionUrl: mobileIntent.launchUrl,
-        appName: mobileIntent.app.name,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
+    // Check for Mobile App Launch Intent (Deep-Linking) only if no optical image attached
+    if (!currentImage) {
+      const mobileIntent = detectMobileAppIntent(trimmed, language);
+      if (mobileIntent) {
+        const aiMsg = {
+          id: Date.now() + 1,
+          role: "ai",
+          text: mobileIntent.replyText,
+          actionUrl: mobileIntent.launchUrl,
+          appName: mobileIntent.app.name,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
 
-      setSessions(prev => prev.map(s => {
-        if (s.id === activeSessionId) {
-          return { ...s, messages: [...s.messages, aiMsg] };
+        setSessions(prev => prev.map(s => {
+          if (s.id === activeSessionId) {
+            return { ...s, messages: [...s.messages, aiMsg] };
+          }
+          return s;
+        }));
+
+        setStatus("idle");
+
+        if (soundEnabled) {
+          speakText(mobileIntent.replyText, voiceGenderRef.current);
         }
-        return s;
-      }));
 
-      setStatus("idle");
+        // Automatically launch native mobile application
+        setTimeout(() => {
+          triggerMobileLaunch(mobileIntent.launchUrl);
+        }, 350);
 
-      if (soundEnabled) {
-        speakText(mobileIntent.replyText, voiceGenderRef.current);
+        return;
       }
-
-      // Automatically launch native mobile application
-      setTimeout(() => {
-        triggerMobileLaunch(mobileIntent.launchUrl);
-      }, 350);
-
-      return;
     }
 
     const reply = await askFriday({
-      prompt: trimmed,
+      prompt: promptToSend,
+      image: currentImage ? {
+        base64: currentImage.base64,
+        mimeType: currentImage.mimeType
+      } : null,
       history: messages,
       userName: userName || (voiceGenderRef.current === "female" ? "Boss" : "Sir"),
       language: language,
@@ -994,6 +1084,24 @@ export default function App() {
                     </div>
                   </div>
 
+                  {msg.image && (
+                    <div
+                      onClick={() => setPreviewModalImage(msg.image)}
+                      className="group/img relative mb-2.5 max-w-xs sm:max-w-sm cursor-pointer overflow-hidden rounded-xl border border-white/20 bg-black/40 shadow-md transition-all hover:border-cyan-400/50"
+                      title="Click to inspect optical telemetry"
+                    >
+                      <img
+                        src={msg.image}
+                        alt="Optical Telemetry"
+                        className="max-h-60 w-auto object-cover rounded-lg transition-transform duration-200 group-hover/img:scale-102"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/50 opacity-0 transition-opacity group-hover/img:opacity-100 font-mono text-[11px] text-white backdrop-blur-xs">
+                        <Eye size={14} />
+                        <span>INSPECT TELEMETRY</span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className={`whitespace-pre-wrap leading-relaxed text-xs sm:text-[14.5px] font-sans ${
                     msg.role === "user" && isLight ? "selection:bg-white/30" : "selection:bg-cyan-500/25"
                   }`}>
@@ -1083,6 +1191,56 @@ export default function App() {
               </div>
             )}
 
+            {/* Staged Optical Telemetry Preview Banner */}
+            {stagedImage && (
+              <div className={`flex items-center justify-between gap-3 rounded-2xl border p-2 sm:p-2.5 backdrop-blur-2xl transition-all shadow-md ${
+                isLight
+                  ? "border-blue-200 bg-blue-50/95 text-slate-800"
+                  : "border-cyan-500/30 bg-zinc-950/95 text-cyan-200 shadow-[0_4px_20px_rgba(6,182,212,0.15)]"
+              }`}>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div
+                    onClick={() => setPreviewModalImage(stagedImage.previewUrl)}
+                    className="relative shrink-0 cursor-pointer overflow-hidden rounded-xl border border-white/20 group/prev"
+                    title="Click to view full image"
+                  >
+                    <img
+                      src={stagedImage.previewUrl}
+                      alt="Staged telemetry"
+                      className="h-10 w-10 sm:h-12 sm:w-12 object-cover transition-transform group-hover/prev:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/prev:opacity-100 flex items-center justify-center text-white transition-opacity">
+                      <Eye size={12} />
+                    </div>
+                  </div>
+                  <div className="min-w-0 text-left">
+                    <div className="flex items-center gap-1.5 font-mono text-[11px] sm:text-xs font-bold tracking-wide">
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-cyan-400 animate-ping" />
+                      <span className="truncate">{stagedImage.name}</span>
+                      <span className={`text-[10px] font-normal px-1.5 py-0.5 rounded border shrink-0 ${
+                        isLight ? "border-slate-300 bg-white text-slate-600" : "border-white/10 bg-white/10 text-slate-300"
+                      }`}>
+                        {stagedImage.size}
+                      </span>
+                    </div>
+                    <p className={`text-[10px] sm:text-[11px] truncate mt-0.5 ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                      Optical feed ready. Type any question or press Send to verify and analyze.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStagedImage(null)}
+                  className={`shrink-0 rounded-xl p-1.5 transition ${
+                    isLight ? "text-slate-500 hover:bg-slate-200 hover:text-slate-900" : "text-slate-400 hover:bg-white/15 hover:text-white"
+                  }`}
+                  title="Remove optical telemetry"
+                >
+                  <CloseIcon size={16} />
+                </button>
+              </div>
+            )}
+
             <ArcWave state={status} audioLevel={audioLevel} theme={theme} />
 
             {/* Input Bar */}
@@ -1116,6 +1274,33 @@ export default function App() {
                 {status === "listening" || autoVoiceMode ? <MicOff size={18} /> : <Mic size={18} />}
               </button>
 
+              {/* Hidden File Input for Image Upload */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageSelect}
+              />
+
+              {/* Optical Image Upload Button */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl border transition-all active:scale-95 backdrop-blur-md ${
+                  stagedImage
+                    ? (isLight
+                        ? "border-blue-500 bg-blue-100 text-blue-700 shadow-xs"
+                        : "border-cyan-400/60 bg-cyan-500/25 text-cyan-200 shadow-[0_0_15px_rgba(6,182,212,0.35)]")
+                    : (isLight
+                        ? "border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        : "border-white/15 bg-white/[0.08] text-white/80 hover:border-white/30 hover:bg-white/[0.14] hover:text-white")
+                }`}
+                title="Upload Image for Optical Telemetry & Analysis"
+              >
+                <ImageIcon size={18} />
+              </button>
+
               {/* Text Input */}
               <input
                 type="text"
@@ -1123,7 +1308,9 @@ export default function App() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder={
-                  autoVoiceMode
+                  stagedImage
+                    ? (language === "te" ? "ఈ చిత్రం గురించి ఏదైనా అడగండి లేదా సెండ్ నొక్కండి..." : "Ask any question about this image, or press Send...")
+                    : autoVoiceMode
                     ? (language === "te" ? "🎙️ హ్యాండ్స్-ఫ్రీ ఆన్‌లో ఉంది... నేరుగా మాట్లాడండి..." : "🎙️ Hands-free mode active... just speak to Friday!")
                     : status === "listening"
                     ? (language === "te" ? "వాయిస్ వింటున్నాను... మాట్లాడండి..." : "Listening to audio feed... speak now")
@@ -1137,7 +1324,7 @@ export default function App() {
               {/* Send Button */}
               <button
                 onClick={() => handleSend()}
-                disabled={!input.trim() || status === "thinking"}
+                disabled={(!input.trim() && !stagedImage) || status === "thinking"}
                 className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl font-medium transition active:scale-95 disabled:opacity-25 shadow-xs backdrop-blur-md ${
                   isLight
                     ? "bg-blue-600 hover:bg-blue-700 text-white"
@@ -1207,6 +1394,29 @@ export default function App() {
               INITIALIZE PROTOCOLS
             </button>
           </form>
+        </div>
+      )}
+
+      {/* FULLSCREEN OPTICAL TELEMETRY LIGHTBOX MODAL */}
+      {previewModalImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in"
+          onClick={() => setPreviewModalImage(null)}
+        >
+          <div className="relative max-h-[90vh] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setPreviewModalImage(null)}
+              className="absolute -top-11 right-0 rounded-xl bg-white/15 p-2 text-white hover:bg-white/25 transition backdrop-blur-md"
+              title="Close optical viewer"
+            >
+              <CloseIcon size={20} />
+            </button>
+            <img
+              src={previewModalImage}
+              alt="Optical Telemetry Full View"
+              className="max-h-[85vh] max-w-[85vw] rounded-2xl object-contain border border-white/20 shadow-2xl"
+            />
+          </div>
         </div>
       )}
     </div>

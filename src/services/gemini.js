@@ -14,6 +14,7 @@ const FAST_MODEL_CASCADE = [
 
 export async function askFriday({
   prompt,
+  image = null,
   history = [],
   apiKey,
   userName = "Boss",
@@ -36,15 +37,50 @@ export async function askFriday({
 
   let personaInstruction = "";
   if (voiceGender === "female") {
-    personaInstruction = `You are F.R.I.D.A.Y. (Female Replacement Intelligent Digital Assistant Youth), Tony Stark's tactical AI assistant from Marvel (played by Kerry Condon). Address the user as '${userTitle}' or 'Boss'. You have a warm, quick-witted, loyal, and tactical personality. Keep answers fast, concise, punchy, and helpful.`;
+    personaInstruction = `You are F.R.I.D.A.Y. (Female Replacement Intelligent Digital Assistant Youth), Tony Stark's tactical AI assistant from Marvel (played by Kerry Condon). Address the user as '${userTitle}' or 'Boss'. You have a warm, quick-witted, loyal, and tactical personality. Keep answers fast, concise, punchy, and helpful. When analyzing images, verify and break down visible details accurately with tactical precision.`;
   } else {
-    personaInstruction = `You are F.R.I.D.A.Y. in tactical J.A.R.V.I.S. male protocol, Tony Stark's AI (Paul Bettany style). Address the user as '${userTitle}' or 'Sir'. You speak with refined, confident British eloquence. Keep answers fast, concise, punchy, and helpful.`;
+    personaInstruction = `You are F.R.I.D.A.Y. in tactical J.A.R.V.I.S. male protocol, Tony Stark's AI (Paul Bettany style). Address the user as '${userTitle}' or 'Sir'. You speak with refined, confident British eloquence. Keep answers fast, concise, punchy, and helpful. When analyzing images, verify and break down visible details accurately with tactical precision.`;
   }
 
   const languageInstruction =
     language === "te"
       ? `Respond in natural, polite TELUGU (తెలుగు) script. Keep sentences clear, crisp, and conversational.`
       : `Respond in natural, conversational ENGLISH. Pronounce your name naturally as "Friday". Keep replies crisp, sharp, and concise.`;
+
+  // Build user query parts (with optional multimodal optical telemetry / image input)
+  const userParts = [];
+  if (image) {
+    let base64Data = image.data || image.base64;
+    let mimeType = image.mimeType || image.mime_type || "image/jpeg";
+
+    if (typeof image === "string") {
+      base64Data = image;
+    }
+
+    if (typeof base64Data === "string" && base64Data.includes(";base64,")) {
+      const split = base64Data.split(";base64,");
+      const extractedMime = split[0].replace("data:", "");
+      if (extractedMime) mimeType = extractedMime;
+      base64Data = split[1];
+    }
+
+    if (base64Data) {
+      userParts.push({
+        inline_data: {
+          mime_type: mimeType,
+          data: base64Data
+        }
+      });
+    }
+  }
+
+  const finalPrompt = (prompt && prompt.trim())
+    ? prompt.trim()
+    : (language === "te"
+        ? "దయచేసి ఈ చిత్రాన్ని పరిశీలించి, అందులో ఏముందో స్పష్టంగా వివరించండి."
+        : "Please analyze and verify this optical image feed, and provide a clear, tactical breakdown of what you observe.");
+
+  userParts.push({ text: finalPrompt });
 
   const requestPayload = {
     system_instruction: {
@@ -57,7 +93,8 @@ ${languageInstruction}
 CORE RULES:
 1. SPEED & BREVITY: Answer promptly. Give direct, high-value answers without rambling so voice synthesis speaks quickly.
 2. TACTICAL TONE: Friendly, loyal, and intelligent.
-3. CONVERSATIONAL: Avoid excessive bullet points unless specifically requested.`
+3. OPTICAL VISION: When given an image, verify what it depicts, read any visible text, identify objects/errors, and answer the user's specific inquiries thoroughly.
+4. CONVERSATIONAL: Avoid excessive bullet points unless specifically requested.`
         }
       ]
     },
@@ -68,12 +105,12 @@ CORE RULES:
       })),
       {
         role: "user",
-        parts: [{ text: prompt }]
+        parts: userParts
       }
     ],
     generationConfig: {
       temperature: 0.65,
-      maxOutputTokens: 350, // Tuned for rapid sub-2s generation and quick speech
+      maxOutputTokens: image ? 650 : 350,
     }
   };
 
