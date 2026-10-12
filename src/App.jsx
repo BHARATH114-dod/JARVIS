@@ -107,6 +107,7 @@ export default function App() {
     statusRef.current = status;
   }, [status]);
 
+  const chatContainerRef = useRef(null);
   const chatEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -123,7 +124,12 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem("friday_active_session", activeSessionId);
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: "smooth"
+      });
+    }
   }, [activeSessionId, messages, status]);
 
   useEffect(() => {
@@ -607,7 +613,7 @@ export default function App() {
   };
 
   return (
-    <div className={`relative flex h-[100dvh] w-full overflow-hidden font-sans transition-colors duration-300 ${
+    <div className={`relative flex h-full w-full overflow-hidden font-sans transition-colors duration-300 ${
       isLight 
         ? "bg-[#f8fafc] text-slate-900 selection:bg-blue-500/20" 
         : "bg-[#000000] text-slate-100 selection:bg-cyan-500/25"
@@ -933,7 +939,7 @@ export default function App() {
           <FourDimensionalDiagram state={status} audioLevel={audioLevel} theme={theme} />
 
           {/* CHAT MESSAGES STREAM */}
-          <div className="relative z-10 flex flex-1 flex-col overflow-y-auto px-3 py-4 sm:px-8 sm:py-6 max-w-4xl mx-auto w-full space-y-4 sm:space-y-6">
+          <div ref={chatContainerRef} className="relative z-10 flex flex-1 flex-col overflow-y-auto px-3 py-4 sm:px-8 sm:py-6 max-w-4xl mx-auto w-full space-y-4 sm:space-y-6">
             {messages.map((msg) => (
               <div
                 key={msg.id}

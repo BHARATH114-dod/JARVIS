@@ -1,10 +1,12 @@
 @import "tailwindcss";
 
 @layer base {
-  html, body {
+  html, body, #root {
     height: 100%;
+    width: 100%;
     margin: 0;
     padding: 0;
+    overflow: hidden;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
   }
@@ -23,6 +25,10 @@
   font-family: 'JetBrains Mono', monospace;
 }
 
+.font-orbitron {
+  font-family: 'Orbitron', monospace, sans-serif;
+}
+
 /* Light / Pitch Black Mode Root Styling */
 html.light body, body.light {
   background-color: #f8fafc;
@@ -35,25 +41,26 @@ html.dark body, body.dark {
 }
 
 /* Glassmorphism Surface Primitives */
-.glass-panel-dark {
-  background: rgba(18, 18, 20, 0.75);
+.glass-glow-dark {
+  background: rgba(12, 12, 16, 0.85);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
 }
 
-.glass-panel-light {
-  background: rgba(255, 255, 255, 0.85);
+.glass-glow-light {
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.06);
 }
 
 /* Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
