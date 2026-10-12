@@ -1,5 +1,9 @@
 import React, { useEffect, useRef } from "react";
 
+/**
+ * ArcWave: Sleek glassmorphic audio spectrum visualizer.
+ * Renders smooth frosted sine waves and translucent equalizer bars.
+ */
 export default function ArcWave({ state = "idle", audioLevel = 0 }) {
   const canvasRef = useRef(null);
 
@@ -17,22 +21,44 @@ export default function ArcWave({ state = "idle", audioLevel = 0 }) {
       ctx.clearRect(0, 0, width, height);
 
       const centerY = height / 2;
-      const baseAmp = (state === "speaking" ? 28 : state === "listening" ? 24 : state === "thinking" ? 14 : 6) * dpr;
-      const dynamicAmp = baseAmp + (audioLevel * 45 * dpr);
+      const baseAmp = (state === "speaking" ? 26 : state === "listening" ? 22 : state === "thinking" ? 14 : 5) * dpr;
+      const dynamicAmp = baseAmp + (audioLevel * 42 * dpr);
 
-      // Iron Man Stark Gold & Crimson Harmonic Sine Waves
+      // Frosted Glass Crystalline Wave Profiles (Ice Blue, Pure White, Soft Violet, Cyan)
       const waveConfigs = [
-        { color: "rgba(255, 195, 0, 0.9)", speed: 0.05, freq: 0.007, blur: 16, width: 3, offset: 0 },
-        { color: "rgba(230, 57, 70, 0.7)", speed: 0.035, freq: 0.012, blur: 12, width: 2, offset: 2 },
-        { color: "rgba(255, 214, 10, 0.65)", speed: -0.04, freq: 0.009, blur: 14, width: 2.2, offset: 4 },
-        { color: "rgba(208, 0, 0, 0.45)", speed: 0.065, freq: 0.015, blur: 8, width: 1.5, offset: 1 },
+        { color: "rgba(56, 189, 248, 0.85)", speed: 0.045, freq: 0.008, blur: 14, width: 2.4, offset: 0 },
+        { color: "rgba(255, 255, 255, 0.75)", speed: 0.03, freq: 0.012, blur: 10, width: 1.8, offset: 2 },
+        { color: "rgba(167, 139, 250, 0.65)", speed: -0.035, freq: 0.009, blur: 12, width: 2.0, offset: 4 },
+        { color: "rgba(96, 165, 250, 0.45)", speed: 0.055, freq: 0.014, blur: 8, width: 1.4, offset: 1 },
       ];
 
+      // Draw Glass Spectrum Bars
+      const barCount = 40;
+      const barSpacing = width / barCount;
+      ctx.save();
+      for (let i = 0; i < barCount; i++) {
+        const norm = i / barCount;
+        const barEnv = Math.sin(norm * Math.PI);
+        const barAmp = (dynamicAmp * 0.65 * barEnv) * Math.abs(Math.sin(phase * 0.08 + i * 0.4));
+        const bx = i * barSpacing + barSpacing * 0.25;
+        const bWidth = barSpacing * 0.5;
+
+        const grad = ctx.createLinearGradient(0, centerY - barAmp, 0, centerY + barAmp);
+        grad.addColorStop(0, "rgba(255, 255, 255, 0.35)");
+        grad.addColorStop(0.5, "rgba(56, 189, 248, 0.2)");
+        grad.addColorStop(1, "rgba(255, 255, 255, 0.35)");
+
+        ctx.fillStyle = grad;
+        ctx.fillRect(bx, centerY - barAmp, bWidth, barAmp * 2);
+      }
+      ctx.restore();
+
+      // Draw Smooth Frosted Harmonic Waves
       waveConfigs.forEach((cfg) => {
         ctx.save();
         ctx.beginPath();
         ctx.strokeStyle = cfg.color;
-        ctx.lineWidth = cfg.width * window.devicePixelRatio;
+        ctx.lineWidth = cfg.width * dpr;
         ctx.shadowColor = cfg.color;
         ctx.shadowBlur = cfg.blur;
 
@@ -44,7 +70,7 @@ export default function ArcWave({ state = "idle", audioLevel = 0 }) {
             Math.sin(x * cfg.freq + phase * (cfg.speed > 0 ? 1 : -1) + cfg.offset) *
             dynamicAmp *
             envelope *
-            (1 + 0.3 * Math.sin(phase * 0.1 + x * 0.02));
+            (1 + 0.25 * Math.sin(phase * 0.1 + x * 0.02));
 
           if (x === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
@@ -53,28 +79,7 @@ export default function ArcWave({ state = "idle", audioLevel = 0 }) {
         ctx.restore();
       });
 
-      // Gold & Crimson Audio Spectrum bars in background
-      const barCount = 44;
-      const barSpacing = width / barCount;
-      ctx.save();
-      for (let i = 0; i < barCount; i++) {
-        const norm = i / barCount;
-        const barEnv = Math.sin(norm * Math.PI);
-        const barAmp = (dynamicAmp * 0.7 * barEnv) * Math.abs(Math.sin(phase * 0.08 + i * 0.4));
-        const bx = i * barSpacing + barSpacing * 0.25;
-        const bWidth = barSpacing * 0.5;
-
-        const grad = ctx.createLinearGradient(0, centerY - barAmp, 0, centerY + barAmp);
-        grad.addColorStop(0, "rgba(255, 195, 0, 0.85)");
-        grad.addColorStop(0.5, "rgba(186, 24, 27, 0.3)");
-        grad.addColorStop(1, "rgba(255, 195, 0, 0.85)");
-
-        ctx.fillStyle = grad;
-        ctx.fillRect(bx, centerY - barAmp, bWidth, barAmp * 2);
-      }
-      ctx.restore();
-
-      phase += 0.045;
+      phase += 0.04;
       animationFrameId = requestAnimationFrame(render);
     };
 
@@ -83,22 +88,17 @@ export default function ArcWave({ state = "idle", audioLevel = 0 }) {
   }, [state, audioLevel]);
 
   return (
-    <div className="relative w-full h-16 sm:h-22 flex items-center justify-center overflow-hidden rounded-xl sm:rounded-2xl border border-amber-500/25 bg-[#0d0407]/80 backdrop-blur-md shadow-[0_0_20px_rgba(255,183,3,0.1)]">
-      {/* Stark Grid Overlay */}
-      <div 
-        className="pointer-events-none absolute inset-0 opacity-10"
-        style={{
-          backgroundImage: "linear-gradient(to right, #ffb703 1px, transparent 1px), linear-gradient(to bottom, #d00000 1px, transparent 1px)",
-          backgroundSize: "28px 28px"
-        }}
-      />
+    <div className="relative w-full h-16 sm:h-20 flex items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.25)]">
+      {/* Top Glass Reflection Edge */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-      <div className="pointer-events-none absolute left-4 top-2.5 font-mono text-[9px] text-amber-400/80 tracking-widest flex items-center gap-1.5">
-        <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping" />
-        STARK HARMONIC RESONANCE
+      {/* Glass Badges */}
+      <div className="pointer-events-none absolute left-3 sm:left-4 top-2 sm:top-2.5 font-mono text-[9px] sm:text-[10px] text-white/60 tracking-wider flex items-center gap-1.5">
+        <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
+        AUDIO SPECTRUM
       </div>
-      <div className="pointer-events-none absolute right-4 top-2.5 font-mono text-[9px] text-amber-400/60">
-        STATUS: <span className="text-amber-300 uppercase font-semibold">{state}</span>
+      <div className="pointer-events-none absolute right-3 sm:right-4 top-2 sm:top-2.5 font-mono text-[9px] sm:text-[10px] text-white/50">
+        STATUS: <span className="text-white/80 uppercase font-medium">{state}</span>
       </div>
 
       <canvas ref={canvasRef} className="w-full h-full block" />

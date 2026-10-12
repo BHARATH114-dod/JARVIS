@@ -40,13 +40,13 @@ export default function App() {
     return [
       {
         id: initId,
-        title: "Tactical Matrix // Online",
+        title: "Glass Workspace // Ready",
         createdAt: new Date().toLocaleDateString(),
         messages: [
           {
             id: 1,
             role: "ai",
-            text: `At your service, ${currentName}. I'm F.R.I.D.A.Y. All tactical armor diagnostics and 4D telemetry systems are standing by. What are your orders?`,
+            text: `Hello ${currentName}. I'm F.R.I.D.A.Y. Glass neural interfaces and audio synthesis are ready. How can I assist you today?`,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }
         ]
@@ -253,17 +253,17 @@ export default function App() {
     }
   };
 
-  // Create New Chat (Tactical Session)
+  // Create New Chat (Glass Session)
   const handleNewChat = () => {
     const newId = "session_" + Date.now();
     const currentName = userName || (voiceGender === "female" ? "Boss" : "Sir");
     const welcome = language === "te"
-      ? `నమస్కారం ${currentName}. కొత్త మిషన్ ప్రారంభించబడింది. మీరు ఏమి ఆజ్ఞాపించబోతున్నారు?`
-      : `Tactical telemetry initialized, ${currentName}. Systems calibrated. What are your orders?`;
+      ? `నమస్కారం ${currentName}. కొత్త సెషన్ ప్రారంభించబడింది. నేను మీకు ఎలా సహాయపడగలను?`
+      : `Hello ${currentName}. New session initialized. How can I assist you?`;
 
     const newSession = {
       id: newId,
-      title: `Mission ${sessions.length + 1}`,
+      title: `Conversation ${sessions.length + 1}`,
       createdAt: new Date().toLocaleDateString(),
       messages: [
         {
@@ -579,61 +579,66 @@ export default function App() {
   };
 
   return (
-    <div className="relative flex h-[100dvh] w-full overflow-hidden bg-[#070204] text-[#f7e6d2] font-sans selection:bg-red-500/30">
+    <div className="relative flex h-[100dvh] w-full overflow-hidden bg-[#090d16] text-slate-100 font-sans selection:bg-cyan-500/25">
       
+      {/* AMBIENT FROSTED GLASS BACKGROUND REFLECTIONS */}
+      <div className="pointer-events-none absolute -top-36 -left-36 h-[28rem] w-[28rem] rounded-full bg-cyan-500/10 blur-[110px]" />
+      <div className="pointer-events-none absolute -bottom-36 -right-36 h-[28rem] w-[28rem] rounded-full bg-indigo-500/10 blur-[120px]" />
+      <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 h-80 w-80 rounded-full bg-blue-500/8 blur-[100px]" />
+
       {/* MOBILE BACKDROP OVERLAY */}
       {sidebarOpen && (
         <div 
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-xs md:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden transition-opacity"
         />
       )}
 
-      {/* 1. LEFT SIDEBAR: ARCHIVES / MISSIONS */}
+      {/* 1. LEFT SIDEBAR: ARCHIVES / SESSIONS */}
       <aside 
-        className={`fixed md:relative inset-y-0 left-0 z-50 flex flex-col border-r border-red-500/15 bg-[#0b0305]/95 backdrop-blur-2xl transition-all duration-300 ease-in-out ${
+        className={`fixed md:relative inset-y-0 left-0 z-50 flex flex-col border-r border-white/10 bg-slate-950/75 md:bg-white/[0.02] backdrop-blur-2xl transition-all duration-300 ease-in-out ${
           sidebarOpen ? "w-72 translate-x-0" : "w-0 -translate-x-full md:w-0 overflow-hidden border-r-0"
         }`}
       >
-        <div className="flex h-14 items-center justify-between border-b border-red-500/15 px-4 shrink-0">
+        <div className="flex h-14 items-center justify-between border-b border-white/10 px-4 shrink-0">
           <div className="flex items-center gap-2">
-            <Flame className="h-4 w-4 text-red-400" />
-            <span className="font-orbitron text-xs font-bold tracking-wider text-red-200">
-              TACTICAL ARCHIVES
+            <Sparkles className="h-4 w-4 text-cyan-400" />
+            <span className="font-mono text-xs font-semibold tracking-wider text-slate-200">
+              ARCHIVES
             </span>
           </div>
           <button 
             onClick={() => setSidebarOpen(false)}
-            className="rounded-lg p-1.5 text-neutral-400 hover:bg-white/5 hover:text-red-300 transition"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition"
             title="Collapse Sidebar"
           >
             <PanelLeftClose size={18} />
           </button>
         </div>
 
-        {/* New Mission Button */}
+        {/* New Session Button */}
         <div className="p-3 shrink-0">
           <button
             onClick={handleNewChat}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-950/30 py-2.5 font-mono text-xs font-semibold text-red-200 transition hover:border-red-400 hover:bg-red-900/30 shadow-[0_0_12px_rgba(220,38,38,0.12)] active:scale-[0.98]"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.06] hover:bg-white/[0.12] hover:border-white/25 py-2.5 font-mono text-xs font-medium text-white transition shadow-sm active:scale-[0.98]"
           >
             <Plus size={16} />
-            <span>NEW MISSION</span>
+            <span>NEW CHAT</span>
           </button>
         </div>
 
         {/* Mobile App Quick Launch Panel */}
         <div className="px-3 pb-2 shrink-0">
-          <div className="px-1 py-1 font-mono text-[9px] text-neutral-500 uppercase tracking-widest flex items-center justify-between">
-            <span>Mobile App Links</span>
-            <span className="text-[8px] text-red-400/80">Tap to Open</span>
+          <div className="px-1 py-1 font-mono text-[9px] text-slate-400 uppercase tracking-widest flex items-center justify-between">
+            <span>App Launch</span>
+            <span className="text-[8px] text-cyan-400">Glass Link</span>
           </div>
           <div className="grid grid-cols-4 gap-1.5 pt-1">
             {SUPPORTED_MOBILE_APPS.slice(0, 4).map((app) => (
               <button
                 key={app.id}
                 onClick={() => triggerMobileLaunch(app.webUrl)}
-                className="flex flex-col items-center justify-center p-1.5 rounded-lg border border-red-500/20 bg-red-950/20 hover:bg-red-900/30 text-[10px] font-mono text-red-200 transition active:scale-95"
+                className="flex flex-col items-center justify-center p-1.5 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.09] text-[10px] font-mono text-slate-200 transition active:scale-95 shadow-sm"
                 title={`Launch ${app.name}`}
               >
                 <span className="truncate">{app.name}</span>
@@ -644,8 +649,8 @@ export default function App() {
 
         {/* History List */}
         <div className="flex-1 overflow-y-auto px-2 space-y-1">
-          <div className="px-2 py-1 font-mono text-[9px] text-neutral-500 uppercase tracking-widest">
-            Recent Transcripts
+          <div className="px-2 py-1 font-mono text-[9px] text-slate-400 uppercase tracking-widest">
+            Recent Conversations
           </div>
           {sessions.map((sess) => (
             <div
@@ -656,17 +661,17 @@ export default function App() {
               }}
               className={`group flex items-center justify-between rounded-xl px-3 py-2.5 cursor-pointer text-xs transition ${
                 activeSessionId === sess.id
-                  ? "bg-red-950/40 text-red-200 border border-red-500/30 font-medium"
-                  : "text-neutral-400 hover:bg-white/5 hover:text-neutral-200"
+                  ? "bg-white/[0.12] text-white border border-white/20 font-medium shadow-[0_4px_16px_rgba(0,0,0,0.2)]"
+                  : "text-slate-400 hover:bg-white/[0.05] hover:text-slate-200"
               }`}
             >
               <div className="flex items-center gap-2 truncate">
-                <MessageSquare size={14} className={activeSessionId === sess.id ? "text-red-400 shrink-0" : "text-neutral-600 shrink-0"} />
+                <MessageSquare size={14} className={activeSessionId === sess.id ? "text-cyan-400 shrink-0" : "text-slate-500 shrink-0"} />
                 <span className="truncate">{sess.title}</span>
               </div>
               <button
                 onClick={(e) => handleDeleteSession(sess.id, e)}
-                className="opacity-0 group-hover:opacity-100 p-1 text-neutral-500 hover:text-red-400 transition"
+                className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-400 transition"
                 title="Delete transcript"
               >
                 <Trash2 size={13} />
@@ -676,17 +681,17 @@ export default function App() {
         </div>
 
         {/* Sidebar Footer User Info */}
-        <div className="border-t border-red-500/15 p-3 flex items-center justify-between font-mono text-xs shrink-0">
+        <div className="border-t border-white/10 p-3 flex items-center justify-between font-mono text-xs shrink-0">
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-red-900/40 border border-red-500/30 flex items-center justify-center text-red-300 font-bold">
-              {userName ? userName[0].toUpperCase() : "B"}
+            <div className="h-7 w-7 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center text-white font-semibold">
+              {userName ? userName[0].toUpperCase() : "U"}
             </div>
-            <span className="text-neutral-300 font-medium truncate max-w-[120px]">{userName || "Boss"}</span>
+            <span className="text-slate-200 font-medium truncate max-w-[120px]">{userName || "User"}</span>
           </div>
           <button
             onClick={() => setShowNameModal(true)}
-            className="p-1.5 text-neutral-400 hover:text-red-300 hover:bg-white/5 rounded-lg"
-            title="Edit Biometrics"
+            className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition"
+            title="Edit Profile"
           >
             <UserCheck size={16} />
           </button>
@@ -697,12 +702,12 @@ export default function App() {
       <div className="relative flex flex-1 flex-col overflow-hidden min-w-0">
         
         {/* TOP NAVIGATION HUD */}
-        <header className="relative z-20 flex h-14 items-center justify-between border-b border-red-500/15 bg-[#090204]/90 px-3 sm:px-4 backdrop-blur-xl shrink-0">
+        <header className="relative z-20 flex h-14 items-center justify-between border-b border-white/10 bg-slate-950/40 px-3 sm:px-4 backdrop-blur-2xl shrink-0">
           <div className="flex items-center gap-2 sm:gap-3">
             {!sidebarOpen && (
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="rounded-lg p-1.5 text-neutral-400 hover:bg-white/5 hover:text-red-300 transition"
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition"
                 title="Open Archives"
               >
                 <PanelLeftOpen size={20} />
@@ -710,11 +715,11 @@ export default function App() {
             )}
 
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-orbitron text-sm sm:text-base font-extrabold tracking-widest text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">
+              <span className="font-mono text-sm sm:text-base font-bold tracking-widest text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.25)]">
                 F.R.I.D.A.Y.
               </span>
-              <span className="hidden xs:inline rounded bg-red-950/60 px-1.5 py-0.5 font-mono text-[9px] text-amber-300 border border-red-500/30">
-                MARK IV // 4D HUD
+              <span className="hidden xs:inline rounded-full bg-white/[0.08] px-2 py-0.5 font-mono text-[9px] text-cyan-300 border border-white/10 backdrop-blur-md">
+                GLASS v2.0
               </span>
             </div>
           </div>
@@ -725,15 +730,15 @@ export default function App() {
             {/* HANDS-FREE CONTINUOUS CONVERSATION TOGGLE */}
             <button
               onClick={toggleAutoVoiceMode}
-              className={`flex items-center gap-1 sm:gap-1.5 rounded-lg border px-2 sm:px-2.5 py-1 font-mono text-[11px] sm:text-xs transition active:scale-95 ${
+              className={`flex items-center gap-1 sm:gap-1.5 rounded-xl border px-2 sm:px-2.5 py-1 font-mono text-[11px] sm:text-xs transition active:scale-95 backdrop-blur-xl ${
                 autoVoiceMode
-                  ? "border-emerald-500/70 bg-emerald-950/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.35)] animate-pulse font-bold"
-                  : "border-neutral-800 bg-black/40 text-neutral-400 hover:border-emerald-500/30 hover:text-emerald-300"
+                  ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.25)] animate-pulse font-semibold"
+                  : "border-white/10 bg-white/[0.04] text-slate-400 hover:border-white/20 hover:text-slate-200"
               }`}
               title="Continuous Hands-Free Conversation: Speak anytime without clicking the mic button"
             >
-              <Radio size={13} className={autoVoiceMode ? "text-emerald-400 animate-ping" : "text-neutral-500"} />
-              <span className="font-semibold uppercase">
+              <Radio size={13} className={autoVoiceMode ? "text-emerald-400 animate-ping" : "text-slate-500"} />
+              <span className="font-medium uppercase">
                 {autoVoiceMode ? (
                   <>
                     <span className="hidden sm:inline">HANDS-FREE: </span>ON
@@ -749,15 +754,11 @@ export default function App() {
             {/* MANUAL VOICE GENDER SWITCHER: FEMALE (FRIDAY) / MALE (JARVIS) */}
             <button
               onClick={toggleVoiceGender}
-              className={`flex items-center gap-1 sm:gap-1.5 rounded-lg border px-2 sm:px-2.5 py-1 font-mono text-[11px] sm:text-xs transition active:scale-95 shadow-[0_0_10px_rgba(220,38,38,0.15)] ${
-                voiceGender === "female"
-                  ? "border-amber-500/40 bg-amber-950/30 text-amber-300 hover:border-amber-400 hover:bg-amber-900/40"
-                  : "border-red-500/40 bg-red-950/30 text-red-300 hover:border-red-400 hover:bg-red-900/40"
-              }`}
-              title="Click to toggle between Female (Friday) & Male (Jarvis) Voice"
+              className="flex items-center gap-1 sm:gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-slate-200 hover:text-white px-2 sm:px-2.5 py-1 font-mono text-[11px] sm:text-xs transition active:scale-95 shadow-sm backdrop-blur-xl"
+              title="Click to toggle between Female & Male Voice"
             >
-              <Sparkles size={13} className={voiceGender === "female" ? "text-amber-400" : "text-red-400"} />
-              <span className="font-semibold uppercase">
+              <Sparkles size={13} className="text-cyan-400" />
+              <span className="font-medium uppercase">
                 {voiceGender === "female" ? (
                   <>
                     <span className="hidden sm:inline">VOICE: </span>FEMALE
@@ -771,16 +772,16 @@ export default function App() {
             </button>
 
             {/* Language Switcher */}
-            <div className="flex items-center rounded-lg border border-red-500/20 bg-black/60 p-0.5 font-mono text-[11px] sm:text-xs">
+            <div className="flex items-center rounded-xl border border-white/10 bg-white/[0.04] p-0.5 font-mono text-[11px] sm:text-xs backdrop-blur-xl">
               <button
                 onClick={() => {
                   setLanguage("en");
-                  speakText(`English mode calibrated, ${userName || (voiceGender === "female" ? "Boss" : "Sir")}.`);
+                  speakText(`English mode calibrated, ${userName || "User"}.`);
                 }}
-                className={`rounded px-1.5 sm:px-2 py-0.5 sm:py-1 transition ${
+                className={`rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 transition ${
                   language === "en"
-                    ? "bg-red-600/90 text-white font-bold shadow-[0_0_8px_rgba(220,38,38,0.4)]"
-                    : "text-neutral-400 hover:text-neutral-200"
+                    ? "bg-white/20 text-white font-semibold shadow-sm"
+                    : "text-slate-400 hover:text-white"
                 }`}
               >
                 EN
@@ -790,10 +791,10 @@ export default function App() {
                   setLanguage("te");
                   speakText(`తెలుగు భాషలోకి మార్చబడింది, ${userName || "గారు"}.`);
                 }}
-                className={`rounded px-1.5 sm:px-2 py-0.5 sm:py-1 transition ${
+                className={`rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 transition ${
                   language === "te"
-                    ? "bg-red-600/90 text-white font-bold shadow-[0_0_8px_rgba(220,38,38,0.4)]"
-                    : "text-neutral-400 hover:text-neutral-200"
+                    ? "bg-white/20 text-white font-semibold shadow-sm"
+                    : "text-slate-400 hover:text-white"
                 }`}
               >
                 TE
@@ -805,13 +806,13 @@ export default function App() {
               onClick={() => {
                 const next = !soundEnabled;
                 setSoundEnabled(next);
-                if (next) speakText(language === "te" ? "ధ్వని పునరుద్ధరించబడింది." : `Audio restored, ${userName || (voiceGender === "female" ? "Boss" : "Sir")}.`);
+                if (next) speakText(language === "te" ? "ధ్వని పునరుద్ధరించబడింది." : `Audio restored, ${userName || "User"}.`);
                 else window.speechSynthesis.cancel();
               }}
-              className={`flex items-center rounded-lg border p-1.5 sm:px-2 sm:py-1 font-mono text-xs transition ${
+              className={`flex items-center rounded-xl border p-1.5 sm:px-2 sm:py-1 font-mono text-xs transition backdrop-blur-xl ${
                 soundEnabled
-                  ? "border-red-500/30 bg-red-950/30 text-red-200"
-                  : "border-neutral-800 bg-black/40 text-neutral-500"
+                  ? "border-white/15 bg-white/10 text-white"
+                  : "border-white/10 bg-white/[0.03] text-slate-500"
               }`}
               title={soundEnabled ? "Mute Voice" : "Unmute Voice"}
             >
@@ -822,7 +823,7 @@ export default function App() {
         </header>
 
         {/* WORKSPACE BODY WITH 4D DIAGRAM IN BACKGROUND */}
-        <div className="relative flex min-h-0 flex-1 overflow-hidden bg-[#070204]">
+        <div className="relative flex min-h-0 flex-1 overflow-hidden bg-transparent">
           
           {/* 4-DIMENSIONAL ROTATING HOLOGRAPHIC DIAGRAM BACKGROUND */}
           <FourDimensionalDiagram state={status} audioLevel={audioLevel} />
@@ -835,10 +836,10 @@ export default function App() {
                 className={`flex gap-2.5 sm:gap-4 ${msg.role === "ai" ? "" : "flex-row-reverse"}`}
               >
                 <div
-                  className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl border ${
+                  className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl border backdrop-blur-md ${
                     msg.role === "ai"
-                      ? "border-red-500/40 bg-red-950/40 text-red-300 shadow-[0_0_12px_rgba(220,38,38,0.2)]"
-                      : "border-neutral-700 bg-neutral-900/60 text-neutral-300"
+                      ? "border-white/15 bg-white/10 text-cyan-300 shadow-[0_0_15px_rgba(56,189,248,0.2)]"
+                      : "border-blue-400/30 bg-blue-500/20 text-blue-200"
                   }`}
                 >
                   {msg.role === "ai" ? <Zap size={16} /> : <User size={16} />}
@@ -847,19 +848,19 @@ export default function App() {
                 <div
                   className={`relative group max-w-[90%] sm:max-w-[85%] rounded-2xl border px-3.5 py-2.5 sm:px-5 sm:py-3.5 backdrop-blur-xl ${
                     msg.role === "ai"
-                      ? "border-red-500/20 bg-[#0f0407]/85 text-[#fbf1e8] shadow-[0_6px_24px_rgba(0,0,0,0.5)]"
-                      : "border-neutral-800 bg-[#160d11]/80 text-neutral-200"
+                      ? "border-white/10 bg-white/[0.06] text-slate-100 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)]"
+                      : "border-blue-400/20 bg-blue-600/15 text-slate-100 shadow-[0_8px_32px_0_rgba(0,0,0,0.2)]"
                   }`}
                 >
-                  <div className="mb-1.5 flex items-center justify-between gap-3 font-mono text-[10px] sm:text-[11px] text-neutral-400 border-b border-white/5 pb-1">
-                    <span className="font-semibold uppercase tracking-wider text-red-400">
-                      {msg.role === "ai" ? "F.R.I.D.A.Y." : userName || "STARK COMMAND"}
+                  <div className="mb-1.5 flex items-center justify-between gap-3 font-mono text-[10px] sm:text-[11px] text-slate-400 border-b border-white/5 pb-1">
+                    <span className={`font-semibold uppercase tracking-wider ${msg.role === "ai" ? "text-cyan-300" : "text-blue-300"}`}>
+                      {msg.role === "ai" ? "F.R.I.D.A.Y." : userName || "USER"}
                     </span>
                     <div className="flex items-center gap-2 sm:gap-3">
                       <span>{msg.timestamp}</span>
                       <button
                         onClick={() => copyText(msg.text, msg.id)}
-                        className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 hover:text-red-300 transition"
+                        className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 hover:text-white transition"
                         title="Copy text"
                       >
                         {copiedId === msg.id ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
@@ -867,7 +868,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="whitespace-pre-wrap leading-relaxed text-xs sm:text-[14.5px] font-sans selection:bg-red-500/30">
+                  <div className="whitespace-pre-wrap leading-relaxed text-xs sm:text-[14.5px] font-sans selection:bg-cyan-500/25">
                     {msg.text}
                   </div>
 
@@ -877,12 +878,12 @@ export default function App() {
                         href={msg.actionUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 hover:brightness-110 px-3.5 py-1.5 font-mono text-xs text-white font-semibold shadow-[0_0_15px_rgba(220,38,38,0.3)] transition active:scale-95"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-1.5 font-mono text-xs text-white font-medium shadow-sm transition active:scale-95 backdrop-blur-md"
                       >
                         <span>Open {msg.appName || "App"}</span>
                         <ExternalLink size={13} />
                       </a>
-                      <span className="text-[10px] font-mono text-neutral-400">Mobile Deep-Link</span>
+                      <span className="text-[10px] font-mono text-slate-400">Glass Deep-Link</span>
                     </div>
                   )}
                 </div>
@@ -891,15 +892,15 @@ export default function App() {
 
             {status === "thinking" && (
               <div className="flex gap-2.5 sm:gap-4 items-center">
-                <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl border border-red-500/40 bg-red-950/30 text-red-300 animate-pulse">
+                <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-cyan-300 animate-pulse backdrop-blur-md">
                   <Cpu size={16} />
                 </div>
-                <div className="rounded-2xl border border-red-500/20 bg-[#0f0407]/85 px-4 py-2.5 sm:px-5 sm:py-3 text-[11px] sm:text-xs font-mono text-red-300 flex items-center gap-2 sm:gap-3">
-                  <span>COMPUTING 4D QUANTUM TELEMETRY</span>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-xl px-4 py-2.5 sm:px-5 sm:py-3 text-[11px] sm:text-xs font-mono text-slate-300 flex items-center gap-2 sm:gap-3 shadow-[0_8px_32px_0_rgba(0,0,0,0.2)]">
+                  <span>PROCESSING</span>
                   <span className="flex gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-bounce" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-bounce [animation-delay:0.2s]" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-bounce [animation-delay:0.4s]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-bounce" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.2s]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.4s]" />
                   </span>
                 </div>
               </div>
@@ -910,21 +911,21 @@ export default function App() {
         </div>
 
         {/* BOTTOM COMMAND DOCK WITH OPTIMIZED HARMONIC WAVE */}
-        <div className="relative z-20 border-t border-red-500/15 bg-[#080204]/90 p-2 sm:p-3 sm:px-8 backdrop-blur-2xl pb-[max(0.75rem,env(safe-area-inset-bottom))] shrink-0">
+        <div className="relative z-20 border-t border-white/10 bg-slate-950/40 p-2 sm:p-3 sm:px-8 backdrop-blur-2xl pb-[max(0.75rem,env(safe-area-inset-bottom))] shrink-0">
           <div className="max-w-4xl mx-auto space-y-1.5 sm:space-y-2">
             
             {/* Hands-Free Mode Glowing Status Ribbon */}
             {autoVoiceMode && (
-              <div className="flex items-center justify-between gap-2 rounded-xl bg-emerald-950/60 border border-emerald-500/40 px-3 py-1.5 font-mono text-[11px] text-emerald-300 shadow-[0_0_16px_rgba(16,185,129,0.25)] animate-pulse">
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-emerald-500/15 border border-emerald-400/30 px-3 py-1.5 font-mono text-[11px] text-emerald-300 shadow-[0_4px_20px_rgba(16,185,129,0.15)] backdrop-blur-xl animate-pulse">
                 <div className="flex items-center gap-2 truncate">
                   <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="font-semibold tracking-wider truncate">
-                    HANDS-FREE MODE ACTIVE // SPEAK FREELY WITHOUT CLICKING
+                  <span className="font-medium tracking-wide truncate">
+                    HANDS-FREE ACTIVE // SPEAK NATURALLY WITHOUT CLICKING
                   </span>
                 </div>
                 <button
                   onClick={toggleAutoVoiceMode}
-                  className="shrink-0 rounded bg-emerald-900/50 hover:bg-emerald-800/60 px-2 py-0.5 text-[10px] text-emerald-200 transition border border-emerald-500/30 font-bold"
+                  className="shrink-0 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 px-2 py-0.5 text-[10px] text-emerald-200 transition border border-emerald-400/30 font-medium"
                   title="Pause Hands-Free Voice Mode"
                 >
                   PAUSE
@@ -935,16 +936,16 @@ export default function App() {
             <ArcWave state={status} audioLevel={audioLevel} />
 
             {/* Input Bar */}
-            <div className="relative flex items-center gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl border border-red-500/25 bg-black/85 p-1.5 sm:p-2 shadow-[0_0_25px_rgba(220,38,38,0.1)]">
+            <div className="relative flex items-center gap-1.5 sm:gap-2 rounded-2xl border border-white/15 bg-white/[0.05] p-1.5 sm:p-2 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.25)]">
               {/* Mic Button */}
               <button
                 onClick={autoVoiceMode ? toggleAutoVoiceMode : toggleListening}
-                className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg sm:rounded-xl border transition-all active:scale-95 ${
+                className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl border transition-all active:scale-95 backdrop-blur-md ${
                   autoVoiceMode
-                    ? "border-emerald-500 bg-emerald-950/60 text-emerald-300 shadow-[0_0_18px_rgba(16,185,129,0.45)] animate-pulse"
+                    ? "border-emerald-400/60 bg-emerald-500/25 text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.35)] animate-pulse"
                     : status === "listening"
-                    ? "border-red-500 bg-red-600/30 text-red-300 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]"
-                    : "border-red-500/30 bg-red-950/20 text-red-300 hover:border-red-400 hover:bg-red-900/30"
+                    ? "border-red-400/50 bg-red-500/30 text-red-200 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.4)]"
+                    : "border-white/15 bg-white/[0.08] text-white/80 hover:border-white/30 hover:bg-white/[0.14] hover:text-white"
                 }`}
                 title={
                   autoVoiceMode
@@ -965,19 +966,19 @@ export default function App() {
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder={
                   autoVoiceMode
-                    ? (language === "te" ? "🎙️ హ్యాండ్స్-ఫ్రీ ఆన్‌లో ఉంది... నేరుగా మాట్లాడండి..." : "🎙️ Hands-free mode active... just speak to Friday!")
+                    ? (language === "te" ? "🎙️ హ్యాండ్స్-ఫ్రీ ఆన్‌లో ఉంది... నేరుగా మాట్లాడండి..." : "🎙️ Hands-free mode active... just speak!")
                     : status === "listening"
-                    ? (language === "te" ? "వాయిస్ వింటున్నాను... మాట్లాడండి..." : "Listening to audio feed... speak now")
-                    : (language === "te" ? `ఫ్రైడేను అడగండి, ${userName || "గారు"}...` : `Give your orders, ${userName || (voiceGender === "female" ? "Boss" : "Sir")}...`)
+                    ? (language === "te" ? "వాయిస్ వింటున్నాను... మాట్లాడండి..." : "Listening to your voice... speak now")
+                    : (language === "te" ? `ఫ్రైడేను అడగండి, ${userName || "గారు"}...` : `Ask Friday anything, ${userName || "..."}`)
                 }
-                className="flex-1 bg-transparent px-2.5 sm:px-3 text-base sm:text-sm text-[#fbf1e8] placeholder-neutral-500 focus:outline-none font-sans"
+                className="flex-1 bg-transparent px-2.5 sm:px-3 text-base sm:text-sm text-white placeholder-white/40 focus:outline-none font-sans"
               />
 
               {/* Send Button */}
               <button
                 onClick={() => handleSend()}
                 disabled={!input.trim() || status === "thinking"}
-                className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-r from-red-600 to-amber-500 text-white font-bold transition hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:hover:brightness-100 shadow-[0_0_15px_rgba(220,38,38,0.3)]"
+                className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white font-medium transition active:scale-95 disabled:opacity-20 disabled:hover:bg-white/15 shadow-sm backdrop-blur-md"
               >
                 <Send size={16} />
               </button>
@@ -988,20 +989,20 @@ export default function App() {
 
       {/* IDENTITY PROTOCOL MODAL */}
       {showNameModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xl p-4">
           <form 
             onSubmit={handleSaveName}
-            className="w-full max-w-md rounded-2xl border border-red-500/40 bg-[#0d0407] p-6 sm:p-7 shadow-[0_0_60px_rgba(220,38,38,0.3)] text-center"
+            className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-900/80 backdrop-blur-2xl p-6 sm:p-7 shadow-[0_16px_48px_0_rgba(0,0,0,0.5)] text-center"
           >
-            <div className="mx-auto mb-4 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl border border-red-500/50 bg-red-950/40 text-red-300 shadow-[0_0_15px_rgba(220,38,38,0.25)]">
+            <div className="mx-auto mb-4 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-cyan-300 shadow-[0_0_20px_rgba(56,189,248,0.2)] backdrop-blur-md">
               <Zap size={26} />
             </div>
 
-            <h3 className="font-orbitron text-lg sm:text-xl font-bold text-red-300 mb-1 tracking-wider">
-              F.R.I.D.A.Y. BIOMETRICS
+            <h3 className="font-mono text-lg sm:text-xl font-bold text-white mb-1 tracking-wider">
+              USER PROFILE
             </h3>
-            <p className="text-xs text-neutral-400 mb-5 font-sans leading-relaxed">
-              Register your identity to calibrate F.R.I.D.A.Y.'s neural matrix and audio synthesis.
+            <p className="text-xs text-slate-400 mb-5 font-sans leading-relaxed">
+              Personalize your name to calibrate F.R.I.D.A.Y.'s voice synthesis and conversational responses.
             </p>
 
             <input
@@ -1009,15 +1010,15 @@ export default function App() {
               autoFocus
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
-              placeholder="Enter your name (e.g. Bharath or Boss)"
-              className="w-full rounded-xl border border-red-500/30 bg-black/70 px-4 py-3 font-mono text-center text-red-200 placeholder-neutral-600 focus:border-red-400 focus:outline-none mb-5 text-base"
+              placeholder="Enter your name (e.g. Bharath)"
+              className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-4 py-3 font-mono text-center text-white placeholder-white/30 focus:border-white/35 focus:outline-none mb-5 text-base backdrop-blur-md"
             />
 
             <button
               type="submit"
-              className="w-full rounded-xl bg-gradient-to-r from-red-600 to-amber-500 py-3 font-orbitron text-xs font-bold tracking-widest text-white hover:brightness-110 shadow-[0_0_20px_rgba(220,38,38,0.4)] active:scale-[0.98]"
+              className="w-full rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 py-3 font-mono text-xs font-semibold tracking-wider text-white shadow-sm active:scale-[0.98] transition backdrop-blur-md"
             >
-              INITIALIZE PROTOCOLS
+              SAVE & INITIALIZE
             </button>
           </form>
         </div>

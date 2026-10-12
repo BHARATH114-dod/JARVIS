@@ -9,48 +9,62 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    font-family: 'Rajdhani', sans-serif;
-    background-color: #070204;
-    color: #f7e6d2;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #090d16;
+    color: #f1f5f9;
   }
   button, input {
     touch-action: manipulation;
   }
 }
 
-.font-orbitron {
-  font-family: 'Orbitron', monospace, sans-serif;
-}
-
 .font-mono {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Subtle Iron Man Mark IV Accents */
-@keyframes mark4-pulse {
-  0%, 100% {
-    box-shadow: 0 0 15px rgba(220, 38, 38, 0.2), inset 0 0 10px rgba(245, 158, 11, 0.15);
-  }
-  50% {
-    box-shadow: 0 0 30px rgba(220, 38, 38, 0.4), inset 0 0 20px rgba(245, 158, 11, 0.3);
-  }
+/* Glassmorphism Surface Primitives */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
 }
 
-.animate-mark4-pulse {
-  animation: mark4-pulse 4s infinite ease-in-out;
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
 }
 
-/* Tasteful light scrollbars */
+.glass-pill {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-pill:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Translucent Glass Scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(12, 4, 6, 0.6);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(220, 38, 38, 0.3);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(245, 158, 11, 0.6);
+  background: rgba(255, 255, 255, 0.28);
 }
