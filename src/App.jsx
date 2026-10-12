@@ -8,7 +8,7 @@ import {
 import ArcWave from "./components/ArcWave";
 import FourDimensionalDiagram from "./components/FourDimensionalDiagram";
 import { askFriday } from "./services/gemini";
-import { detectMobileAppIntent, triggerMobileLaunch, SUPPORTED_MOBILE_APPS } from "./utils/mobileLauncher";
+import { detectMobileAppIntent, triggerMobileLaunch } from "./utils/mobileLauncher";
 
 export default function App() {
   // Theme: 'pitch-black' (default) | 'light'
@@ -68,13 +68,13 @@ export default function App() {
     return [
       {
         id: initId,
-        title: "Glass Workspace // Ready",
+        title: "Tactical Matrix // Online",
         createdAt: new Date().toLocaleDateString(),
         messages: [
           {
             id: 1,
             role: "ai",
-            text: `Hello ${currentName}. I'm F.R.I.D.A.Y. Glass neural interfaces and audio synthesis are ready. How can I assist you today?`,
+            text: `At your service, ${currentName}. I'm F.R.I.D.A.Y. All tactical armor diagnostics, 4D quantum telemetry, and hands-free neural systems are standing by. What are your orders?`,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }
         ]
@@ -281,17 +281,17 @@ export default function App() {
     }
   };
 
-  // Create New Chat (Glass Session)
+  // Create New Chat (Tactical Session)
   const handleNewChat = () => {
     const newId = "session_" + Date.now();
     const currentName = userName || (voiceGender === "female" ? "Boss" : "Sir");
     const welcome = language === "te"
-      ? `నమస్కారం ${currentName}. కొత్త సెషన్ ప్రారంభించబడింది. నేను మీకు ఎలా సహాయపడగలను?`
-      : `Hello ${currentName}. New session initialized. How can I assist you?`;
+      ? `నమస్కారం ${currentName}. కొత్త మిషన్ ప్రారంభించబడింది. మీరు ఏమి ఆజ్ఞాపించబోతున్నారు?`
+      : `Tactical telemetry initialized, ${currentName}. Systems calibrated. What are your orders?`;
 
     const newSession = {
       id: newId,
-      title: `Conversation ${sessions.length + 1}`,
+      title: `Mission ${sessions.length + 1}`,
       createdAt: new Date().toLocaleDateString(),
       messages: [
         {
@@ -652,11 +652,11 @@ export default function App() {
           isLight ? "border-slate-200" : "border-white/10"
         }`}>
           <div className="flex items-center gap-2">
-            <Sparkles className={`h-4 w-4 ${isLight ? "text-blue-600" : "text-cyan-400"}`} />
-            <span className={`font-mono text-xs font-semibold tracking-wider ${
-              isLight ? "text-slate-800" : "text-slate-200"
+            <Flame className={`h-4 w-4 ${isLight ? "text-amber-500" : "text-red-500"}`} />
+            <span className={`font-mono text-xs font-bold tracking-wider ${
+              isLight ? "text-slate-800" : "text-red-300"
             }`}>
-              ARCHIVES
+              TACTICAL ARCHIVES
             </span>
           </div>
           <button 
@@ -670,45 +670,19 @@ export default function App() {
           </button>
         </div>
 
-        {/* New Session Button */}
+        {/* New Mission Button */}
         <div className="p-3 shrink-0">
           <button
             onClick={handleNewChat}
-            className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-xs font-medium transition shadow-xs active:scale-[0.98] ${
+            className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-xs font-semibold transition active:scale-[0.98] ${
               isLight
-                ? "border border-slate-200 bg-slate-100 hover:bg-slate-200/80 text-slate-800 hover:border-slate-300"
-                : "border border-white/15 bg-white/[0.06] hover:bg-white/[0.12] hover:border-white/25 text-white"
+                ? "border border-slate-200 bg-slate-100 hover:bg-slate-200/80 text-slate-800 shadow-xs"
+                : "border border-red-500/30 bg-red-950/20 hover:bg-red-900/30 text-red-200 shadow-[0_0_15px_rgba(220,38,38,0.15)]"
             }`}
           >
             <Plus size={16} />
-            <span>NEW CHAT</span>
+            <span>NEW MISSION</span>
           </button>
-        </div>
-
-        {/* Mobile App Quick Launch Panel */}
-        <div className="px-3 pb-2 shrink-0">
-          <div className={`px-1 py-1 font-mono text-[9px] uppercase tracking-widest flex items-center justify-between ${
-            isLight ? "text-slate-500" : "text-slate-400"
-          }`}>
-            <span>App Launch</span>
-            <span className={`text-[8px] font-semibold ${isLight ? "text-blue-600" : "text-cyan-400"}`}>Link</span>
-          </div>
-          <div className="grid grid-cols-4 gap-1.5 pt-1">
-            {SUPPORTED_MOBILE_APPS.slice(0, 4).map((app) => (
-              <button
-                key={app.id}
-                onClick={() => triggerMobileLaunch(app.webUrl)}
-                className={`flex flex-col items-center justify-center p-1.5 rounded-xl border text-[10px] font-mono transition active:scale-95 shadow-xs ${
-                  isLight
-                    ? "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
-                    : "border-white/10 bg-white/[0.04] hover:bg-white/[0.09] text-slate-200"
-                }`}
-                title={`Launch ${app.name}`}
-              >
-                <span className="truncate">{app.name}</span>
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* History List */}
@@ -716,7 +690,7 @@ export default function App() {
           <div className={`px-2 py-1 font-mono text-[9px] uppercase tracking-widest ${
             isLight ? "text-slate-500" : "text-slate-400"
           }`}>
-            Recent Conversations
+            RECENT TRANSCRIPTS
           </div>
           {sessions.map((sess) => (
             <div
@@ -810,12 +784,12 @@ export default function App() {
               }`}>
                 F.R.I.D.A.Y.
               </span>
-              <span className={`hidden xs:inline rounded-full px-2 py-0.5 font-mono text-[9px] border backdrop-blur-md ${
+              <span className={`hidden xs:inline rounded px-1.5 py-0.5 font-mono text-[9px] border backdrop-blur-md ${
                 isLight 
                   ? "bg-slate-100 border-slate-200 text-blue-600 font-semibold" 
-                  : "bg-white/[0.08] border-white/10 text-cyan-300"
+                  : "bg-red-950/60 border-red-500/30 text-amber-300 font-semibold"
               }`}>
-                {isLight ? "LIGHT" : "PITCH BLACK"}
+                {isLight ? "LIGHT // HUD" : "MARK IV // OLED HUD"}
               </span>
             </div>
           </div>
@@ -996,9 +970,9 @@ export default function App() {
                     <span className={`font-semibold uppercase tracking-wider ${
                       msg.role === "ai"
                         ? (isLight ? "text-blue-600" : "text-cyan-300")
-                        : (isLight ? "text-blue-100" : "text-blue-300")
+                        : (isLight ? "text-blue-700" : "text-amber-300")
                     }`}>
-                      {msg.role === "ai" ? "F.R.I.D.A.Y." : userName || "USER"}
+                      {msg.role === "ai" ? "F.R.I.D.A.Y." : userName || "STARK COMMAND"}
                     </span>
                     <div className="flex items-center gap-2 sm:gap-3">
                       <span>{msg.timestamp}</span>
@@ -1056,7 +1030,7 @@ export default function App() {
                     ? "border-slate-200 bg-white/95 text-slate-700 shadow-xs"
                     : "border-white/10 bg-zinc-950/90 text-slate-300 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)]"
                 }`}>
-                  <span>PROCESSING</span>
+                  <span>COMPUTING 4D QUANTUM TELEMETRY</span>
                   <span className="flex gap-1">
                     <span className={`h-1.5 w-1.5 rounded-full animate-bounce ${isLight ? "bg-blue-600" : "bg-cyan-400"}`} />
                     <span className={`h-1.5 w-1.5 rounded-full animate-bounce [animation-delay:0.2s] ${isLight ? "bg-blue-600" : "bg-cyan-400"}`} />
@@ -1144,10 +1118,10 @@ export default function App() {
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder={
                   autoVoiceMode
-                    ? (language === "te" ? "🎙️ హ్యాండ్స్-ఫ్రీ ఆన్‌లో ఉంది... నేరుగా మాట్లాడండి..." : "🎙️ Hands-free mode active... just speak!")
+                    ? (language === "te" ? "🎙️ హ్యాండ్స్-ఫ్రీ ఆన్‌లో ఉంది... నేరుగా మాట్లాడండి..." : "🎙️ Hands-free mode active... just speak to Friday!")
                     : status === "listening"
-                    ? (language === "te" ? "వాయిస్ వింటున్నాను... మాట్లాడండి..." : "Listening to your voice... speak now")
-                    : (language === "te" ? `ఫ్రైడేను అడగండి, ${userName || "గారు"}...` : `Ask Friday anything, ${userName || "..."}`)
+                    ? (language === "te" ? "వాయిస్ వింటున్నాను... మాట్లాడండి..." : "Listening to audio feed... speak now")
+                    : (language === "te" ? `ఫ్రైడేను అడగండి, ${userName || "గారు"}...` : `Give your orders, ${userName || (voiceGender === "female" ? "Boss" : "Sir")}...`)
                 }
                 className={`flex-1 bg-transparent px-2.5 sm:px-3 text-base sm:text-sm focus:outline-none font-sans ${
                   isLight ? "text-slate-900 placeholder-slate-400" : "text-white placeholder-white/40"
@@ -1195,12 +1169,12 @@ export default function App() {
             <h3 className={`font-mono text-lg sm:text-xl font-bold mb-1 tracking-wider ${
               isLight ? "text-slate-900" : "text-white"
             }`}>
-              USER PROFILE
+              F.R.I.D.A.Y. BIOMETRICS
             </h3>
             <p className={`text-xs mb-5 font-sans leading-relaxed ${
               isLight ? "text-slate-500" : "text-slate-400"
             }`}>
-              Personalize your name to calibrate F.R.I.D.A.Y.'s voice synthesis and conversational responses.
+              Register your identity to calibrate F.R.I.D.A.Y.'s neural matrix and audio synthesis.
             </p>
 
             <input
@@ -1208,7 +1182,7 @@ export default function App() {
               autoFocus
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
-              placeholder="Enter your name (e.g. Bharath)"
+              placeholder="Enter your name (e.g. Bharath or Boss)"
               className={`w-full rounded-xl border px-4 py-3 font-mono text-center mb-5 text-base backdrop-blur-md focus:outline-none ${
                 isLight
                   ? "border-slate-300 bg-slate-50 text-slate-900 placeholder-slate-400 focus:border-blue-500"
@@ -1221,10 +1195,10 @@ export default function App() {
               className={`w-full rounded-xl py-3 font-mono text-xs font-semibold tracking-wider transition active:scale-[0.98] shadow-xs ${
                 isLight
                   ? "bg-blue-600 hover:bg-blue-700 text-white"
-                  : "bg-white/15 hover:bg-white/25 border border-white/25 text-white shadow-sm"
+                  : "bg-red-600/80 hover:bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.3)]"
               }`}
             >
-              SAVE & INITIALIZE
+              INITIALIZE PROTOCOLS
             </button>
           </form>
         </div>
