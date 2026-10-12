@@ -696,10 +696,134 @@ export default function App() {
     }
   };
 
-  const copyText = (text, id) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 1500);
+  // Robust copy function with fallback for all browsers and devices
+  const copyText = async (text, id) => {
+    if (!text) return;
+    let successful = false;
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        successful = true;
+      } else {
+        throw new Error("Clipboard API unavailable");
+      }
+    } catch (err) {
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        textArea.setAttribute("readonly", "");
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        successful = document.execCommand("copy");
+        document.body.removeChild(textArea);
+      } catch (fallbackErr) {
+        console.error("Copy failed:", fallbackErr);
+      }
+    }
+
+    if (successful) {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
+
+  // Helper to render message content with formatted code blocks & individual copy buttons
+  const renderFormattedContent = (content, msgId) => {
+    if (!content) return null;
+
+    if (!content.includes("```")) {
+      return (
+        <div className={`whitespace-pre-wrap leading-relaxed text-xs sm:text-[14.5px] font-sans select-text ${
+          isLight ? "selection:bg-blue-500/25 selection:text-slate-900" : "selection:bg-cyan-500/30 selection:text-white"
+        }`}>
+          {content}
+        </div>
+      );
+    }
+
+    const parts = content.split(/(```[\s\S]*?```)/g);
+
+    return (
+      <div className={`space-y-3 text-xs sm:text-[14.5px] font-sans leading-relaxed select-text ${
+        isLight ? "selection:bg-blue-500/25 selection:text-slate-900" : "selection:bg-cyan-500/30 selection:text-white"
+      }`}>
+        {parts.map((part, index) => {
+          if (part.startsWith("```") && part.endsWith("```")) {
+            const raw = part.slice(3, -3);
+            const firstNewline = raw.indexOf("\n");
+            let lang = "CODE";
+            let code = raw;
+
+            if (firstNewline !== -1) {
+              const firstLine = raw.slice(0, firstNewline).trim();
+              if (firstLine && !firstLine.includes(" ") && firstLine.length < 24) {
+                lang = firstLine.toUpperCase();
+                code = raw.slice(firstNewline + 1);
+              }
+            }
+
+            const cleanCode = code.trim();
+            const blockId = `${msgId}-code-${index}`;
+            const isCopied = copiedId === blockId;
+
+            return (
+              <div
+                key={index}
+                className={`my-2.5 overflow-hidden rounded-xl border text-left shadow-lg ${
+                  isLight
+                    ? "border-slate-300 bg-slate-900 text-slate-100 shadow-slate-200/50"
+                    : "border-white/15 bg-zinc-950 text-slate-100 shadow-black/80"
+                }`}
+              >
+                {/* Code Block Header with dedicated COPY button */}
+                <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.06] px-3.5 py-1.5 font-mono text-[11px]">
+                  <span className="font-semibold tracking-wider text-cyan-300">{lang}</span>
+                  <button
+                    type="button"
+                    onClick={() => copyText(cleanCode, blockId)}
+                    className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-0.5 font-mono text-[10px] transition active:scale-95 ${
+                      isCopied
+                        ? "border-emerald-500/60 bg-emerald-500/25 text-emerald-300 font-semibold shadow-xs"
+                        : "border-white/15 bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white"
+                    }`}
+                    title="Copy code to clipboard"
+                  >
+                    {isCopied ? (
+                      <>
+                        <Check size={11} className="text-emerald-400" />
+                        <span className="text-emerald-300 font-bold">COPIED</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={11} />
+                        <span>COPY CODE</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                {/* Code Preformatted Body */}
+                <pre className="overflow-x-auto p-3.5 font-mono text-[12px] sm:text-[13px] leading-relaxed selection:bg-cyan-500/35 selection:text-white">
+                  <code>{cleanCode}</code>
+                </pre>
+              </div>
+            );
+          }
+
+          if (!part.trim()) return null;
+
+          return (
+            <div key={index} className="whitespace-pre-wrap">
+              {part}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -1070,16 +1194,31 @@ export default function App() {
                     }`}>
                       {msg.role === "ai" ? "F.R.I.D.A.Y." : userName || "STARK COMMAND"}
                     </span>
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-2 sm:gap-2.5">
                       <span>{msg.timestamp}</span>
                       <button
+                        type="button"
                         onClick={() => copyText(msg.text, msg.id)}
-                        className={`opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition ${
-                          isLight ? "hover:text-slate-900" : "hover:text-white"
+                        className={`flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-[10px] sm:text-[11px] transition backdrop-blur-md active:scale-95 ${
+                          copiedId === msg.id
+                            ? "border border-emerald-500/60 bg-emerald-500/25 text-emerald-300 font-semibold shadow-xs"
+                            : (isLight
+                                ? "border border-slate-300/80 bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 shadow-2xs"
+                                : "border border-white/10 bg-white/[0.08] text-slate-300 hover:bg-white/[0.18] hover:text-white shadow-2xs")
                         }`}
-                        title="Copy text"
+                        title="Copy message content to clipboard"
                       >
-                        {copiedId === msg.id ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                        {copiedId === msg.id ? (
+                          <>
+                            <Check size={11} className="text-emerald-400 shrink-0" />
+                            <span className="text-emerald-300 font-bold">COPIED</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={11} className="shrink-0" />
+                            <span className="opacity-90">COPY</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -1102,11 +1241,8 @@ export default function App() {
                     </div>
                   )}
 
-                  <div className={`whitespace-pre-wrap leading-relaxed text-xs sm:text-[14.5px] font-sans ${
-                    msg.role === "user" && isLight ? "selection:bg-white/30" : "selection:bg-cyan-500/25"
-                  }`}>
-                    {msg.text}
-                  </div>
+                  {/* Formatted Content with code block syntax & dedicated copy buttons */}
+                  {renderFormattedContent(msg.text, msg.id)}
 
                   {msg.actionUrl && (
                     <div className={`mt-3 pt-2.5 border-t flex items-center justify-between gap-2 ${
