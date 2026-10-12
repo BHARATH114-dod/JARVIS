@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Mic, MicOff, Send, Volume2, VolumeX, Flame,
   Sparkles, User, Trash2, UserCheck, MessageSquare,
-  Plus, PanelLeftClose, PanelLeftOpen, Copy, Check, Zap, Cpu, Radio, Headphones, ExternalLink
+  Plus, PanelLeftClose, PanelLeftOpen, Copy, Check, Zap, Cpu, Radio, Headphones, ExternalLink,
+  Sun, Moon
 } from "lucide-react";
 import ArcWave from "./components/ArcWave";
 import FourDimensionalDiagram from "./components/FourDimensionalDiagram";
@@ -10,6 +11,33 @@ import { askFriday } from "./services/gemini";
 import { detectMobileAppIntent, triggerMobileLaunch, SUPPORTED_MOBILE_APPS } from "./utils/mobileLauncher";
 
 export default function App() {
+  // Theme: 'pitch-black' (default) | 'light'
+  const [theme, setTheme] = useState(() => localStorage.getItem("friday_theme") || "pitch-black");
+  const isLight = theme === "light";
+
+  useEffect(() => {
+    localStorage.setItem("friday_theme", theme);
+    if (theme === "light") {
+      document.documentElement.classList.add("light");
+      document.documentElement.classList.remove("dark");
+      document.body.style.backgroundColor = "#f8fafc";
+      document.body.style.color = "#0f172a";
+    } else {
+      document.documentElement.classList.add("dark");
+      document.documentElement.classList.remove("light");
+      document.body.style.backgroundColor = "#000000";
+      document.body.style.color = "#f8fafc";
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    const next = theme === "pitch-black" ? "light" : "pitch-black";
+    setTheme(next);
+    if (soundEnabled) {
+      speakText(next === "light" ? "Light theme engaged." : "Pitch black mode engaged.");
+    }
+  };
+
   // User Profile
   const [userName, setUserName] = useState(() => localStorage.getItem("friday_user_name") || "");
   const [nameInput, setNameInput] = useState("");
@@ -579,37 +607,63 @@ export default function App() {
   };
 
   return (
-    <div className="relative flex h-[100dvh] w-full overflow-hidden bg-[#090d16] text-slate-100 font-sans selection:bg-cyan-500/25">
+    <div className={`relative flex h-[100dvh] w-full overflow-hidden font-sans transition-colors duration-300 ${
+      isLight 
+        ? "bg-[#f8fafc] text-slate-900 selection:bg-blue-500/20" 
+        : "bg-[#000000] text-slate-100 selection:bg-cyan-500/25"
+    }`}>
       
-      {/* AMBIENT FROSTED GLASS BACKGROUND REFLECTIONS */}
-      <div className="pointer-events-none absolute -top-36 -left-36 h-[28rem] w-[28rem] rounded-full bg-cyan-500/10 blur-[110px]" />
-      <div className="pointer-events-none absolute -bottom-36 -right-36 h-[28rem] w-[28rem] rounded-full bg-indigo-500/10 blur-[120px]" />
-      <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 h-80 w-80 rounded-full bg-blue-500/8 blur-[100px]" />
+      {/* AMBIENT BACKGROUND GLOWS */}
+      {!isLight ? (
+        <>
+          <div className="pointer-events-none absolute -top-36 -left-36 h-[28rem] w-[28rem] rounded-full bg-cyan-500/10 blur-[110px]" />
+          <div className="pointer-events-none absolute -bottom-36 -right-36 h-[28rem] w-[28rem] rounded-full bg-indigo-500/10 blur-[120px]" />
+          <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 h-80 w-80 rounded-full bg-blue-500/8 blur-[100px]" />
+        </>
+      ) : (
+        <>
+          <div className="pointer-events-none absolute -top-36 -left-36 h-[28rem] w-[28rem] rounded-full bg-blue-400/10 blur-[110px]" />
+          <div className="pointer-events-none absolute -bottom-36 -right-36 h-[28rem] w-[28rem] rounded-full bg-indigo-300/10 blur-[120px]" />
+          <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 h-80 w-80 rounded-full bg-sky-200/25 blur-[100px]" />
+        </>
+      )}
 
       {/* MOBILE BACKDROP OVERLAY */}
       {sidebarOpen && (
         <div 
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden transition-opacity"
+          className={`fixed inset-0 z-40 transition-opacity md:hidden ${
+            isLight ? "bg-black/35 backdrop-blur-xs" : "bg-black/75 backdrop-blur-sm"
+          }`}
         />
       )}
 
       {/* 1. LEFT SIDEBAR: ARCHIVES / SESSIONS */}
       <aside 
-        className={`fixed md:relative inset-y-0 left-0 z-50 flex flex-col border-r border-white/10 bg-slate-950/75 md:bg-white/[0.02] backdrop-blur-2xl transition-all duration-300 ease-in-out ${
+        className={`fixed md:relative inset-y-0 left-0 z-50 flex flex-col transition-all duration-300 ease-in-out backdrop-blur-2xl ${
+          isLight 
+            ? "border-r border-slate-200 bg-white/95 md:bg-white/80 text-slate-800" 
+            : "border-r border-white/10 bg-black/95 md:bg-black/80 text-slate-200"
+        } ${
           sidebarOpen ? "w-72 translate-x-0" : "w-0 -translate-x-full md:w-0 overflow-hidden border-r-0"
         }`}
       >
-        <div className="flex h-14 items-center justify-between border-b border-white/10 px-4 shrink-0">
+        <div className={`flex h-14 items-center justify-between px-4 shrink-0 border-b ${
+          isLight ? "border-slate-200" : "border-white/10"
+        }`}>
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-cyan-400" />
-            <span className="font-mono text-xs font-semibold tracking-wider text-slate-200">
+            <Sparkles className={`h-4 w-4 ${isLight ? "text-blue-600" : "text-cyan-400"}`} />
+            <span className={`font-mono text-xs font-semibold tracking-wider ${
+              isLight ? "text-slate-800" : "text-slate-200"
+            }`}>
               ARCHIVES
             </span>
           </div>
           <button 
             onClick={() => setSidebarOpen(false)}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition"
+            className={`rounded-lg p-1.5 transition ${
+              isLight ? "text-slate-500 hover:bg-slate-100 hover:text-slate-900" : "text-slate-400 hover:bg-white/10 hover:text-white"
+            }`}
             title="Collapse Sidebar"
           >
             <PanelLeftClose size={18} />
@@ -620,7 +674,11 @@ export default function App() {
         <div className="p-3 shrink-0">
           <button
             onClick={handleNewChat}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.06] hover:bg-white/[0.12] hover:border-white/25 py-2.5 font-mono text-xs font-medium text-white transition shadow-sm active:scale-[0.98]"
+            className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-xs font-medium transition shadow-xs active:scale-[0.98] ${
+              isLight
+                ? "border border-slate-200 bg-slate-100 hover:bg-slate-200/80 text-slate-800 hover:border-slate-300"
+                : "border border-white/15 bg-white/[0.06] hover:bg-white/[0.12] hover:border-white/25 text-white"
+            }`}
           >
             <Plus size={16} />
             <span>NEW CHAT</span>
@@ -629,16 +687,22 @@ export default function App() {
 
         {/* Mobile App Quick Launch Panel */}
         <div className="px-3 pb-2 shrink-0">
-          <div className="px-1 py-1 font-mono text-[9px] text-slate-400 uppercase tracking-widest flex items-center justify-between">
+          <div className={`px-1 py-1 font-mono text-[9px] uppercase tracking-widest flex items-center justify-between ${
+            isLight ? "text-slate-500" : "text-slate-400"
+          }`}>
             <span>App Launch</span>
-            <span className="text-[8px] text-cyan-400">Glass Link</span>
+            <span className={`text-[8px] font-semibold ${isLight ? "text-blue-600" : "text-cyan-400"}`}>Link</span>
           </div>
           <div className="grid grid-cols-4 gap-1.5 pt-1">
             {SUPPORTED_MOBILE_APPS.slice(0, 4).map((app) => (
               <button
                 key={app.id}
                 onClick={() => triggerMobileLaunch(app.webUrl)}
-                className="flex flex-col items-center justify-center p-1.5 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.09] text-[10px] font-mono text-slate-200 transition active:scale-95 shadow-sm"
+                className={`flex flex-col items-center justify-center p-1.5 rounded-xl border text-[10px] font-mono transition active:scale-95 shadow-xs ${
+                  isLight
+                    ? "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                    : "border-white/10 bg-white/[0.04] hover:bg-white/[0.09] text-slate-200"
+                }`}
                 title={`Launch ${app.name}`}
               >
                 <span className="truncate">{app.name}</span>
@@ -649,7 +713,9 @@ export default function App() {
 
         {/* History List */}
         <div className="flex-1 overflow-y-auto px-2 space-y-1">
-          <div className="px-2 py-1 font-mono text-[9px] text-slate-400 uppercase tracking-widest">
+          <div className={`px-2 py-1 font-mono text-[9px] uppercase tracking-widest ${
+            isLight ? "text-slate-500" : "text-slate-400"
+          }`}>
             Recent Conversations
           </div>
           {sessions.map((sess) => (
@@ -661,17 +727,27 @@ export default function App() {
               }}
               className={`group flex items-center justify-between rounded-xl px-3 py-2.5 cursor-pointer text-xs transition ${
                 activeSessionId === sess.id
-                  ? "bg-white/[0.12] text-white border border-white/20 font-medium shadow-[0_4px_16px_rgba(0,0,0,0.2)]"
-                  : "text-slate-400 hover:bg-white/[0.05] hover:text-slate-200"
+                  ? (isLight 
+                      ? "bg-slate-100 text-slate-900 border border-slate-200 font-semibold shadow-xs"
+                      : "bg-white/[0.12] text-white border border-white/20 font-medium shadow-[0_4px_16px_rgba(0,0,0,0.5)]")
+                  : (isLight
+                      ? "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900"
+                      : "text-slate-400 hover:bg-white/[0.05] hover:text-slate-200")
               }`}
             >
               <div className="flex items-center gap-2 truncate">
-                <MessageSquare size={14} className={activeSessionId === sess.id ? "text-cyan-400 shrink-0" : "text-slate-500 shrink-0"} />
+                <MessageSquare size={14} className={
+                  activeSessionId === sess.id 
+                    ? (isLight ? "text-blue-600 shrink-0" : "text-cyan-400 shrink-0") 
+                    : (isLight ? "text-slate-400 shrink-0" : "text-slate-500 shrink-0")
+                } />
                 <span className="truncate">{sess.title}</span>
               </div>
               <button
                 onClick={(e) => handleDeleteSession(sess.id, e)}
-                className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-400 transition"
+                className={`opacity-0 group-hover:opacity-100 p-1 transition ${
+                  isLight ? "text-slate-400 hover:text-red-500" : "text-slate-400 hover:text-red-400"
+                }`}
                 title="Delete transcript"
               >
                 <Trash2 size={13} />
@@ -681,16 +757,24 @@ export default function App() {
         </div>
 
         {/* Sidebar Footer User Info */}
-        <div className="border-t border-white/10 p-3 flex items-center justify-between font-mono text-xs shrink-0">
+        <div className={`p-3 flex items-center justify-between font-mono text-xs shrink-0 border-t ${
+          isLight ? "border-slate-200" : "border-white/10"
+        }`}>
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center text-white font-semibold">
+            <div className={`h-7 w-7 rounded-lg border flex items-center justify-center font-semibold ${
+              isLight ? "bg-slate-100 border-slate-200 text-slate-800" : "bg-white/10 border border-white/15 text-white"
+            }`}>
               {userName ? userName[0].toUpperCase() : "U"}
             </div>
-            <span className="text-slate-200 font-medium truncate max-w-[120px]">{userName || "User"}</span>
+            <span className={`font-medium truncate max-w-[120px] ${
+              isLight ? "text-slate-800" : "text-slate-200"
+            }`}>{userName || "User"}</span>
           </div>
           <button
             onClick={() => setShowNameModal(true)}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition"
+            className={`p-1.5 rounded-lg transition ${
+              isLight ? "text-slate-500 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white hover:bg-white/10"
+            }`}
             title="Edit Profile"
           >
             <UserCheck size={16} />
@@ -702,12 +786,18 @@ export default function App() {
       <div className="relative flex flex-1 flex-col overflow-hidden min-w-0">
         
         {/* TOP NAVIGATION HUD */}
-        <header className="relative z-20 flex h-14 items-center justify-between border-b border-white/10 bg-slate-950/40 px-3 sm:px-4 backdrop-blur-2xl shrink-0">
+        <header className={`relative z-20 flex h-14 items-center justify-between px-3 sm:px-4 backdrop-blur-2xl shrink-0 transition-colors duration-300 border-b ${
+          isLight 
+            ? "border-slate-200 bg-white/85 text-slate-800" 
+            : "border-white/10 bg-black/85 text-white"
+        }`}>
           <div className="flex items-center gap-2 sm:gap-3">
             {!sidebarOpen && (
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition"
+                className={`rounded-lg p-1.5 transition ${
+                  isLight ? "text-slate-500 hover:bg-slate-100 hover:text-slate-900" : "text-slate-400 hover:bg-white/10 hover:text-white"
+                }`}
                 title="Open Archives"
               >
                 <PanelLeftOpen size={20} />
@@ -715,11 +805,17 @@ export default function App() {
             )}
 
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-mono text-sm sm:text-base font-bold tracking-widest text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.25)]">
+              <span className={`font-mono text-sm sm:text-base font-bold tracking-widest ${
+                isLight ? "text-slate-900" : "text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.25)]"
+              }`}>
                 F.R.I.D.A.Y.
               </span>
-              <span className="hidden xs:inline rounded-full bg-white/[0.08] px-2 py-0.5 font-mono text-[9px] text-cyan-300 border border-white/10 backdrop-blur-md">
-                GLASS v2.0
+              <span className={`hidden xs:inline rounded-full px-2 py-0.5 font-mono text-[9px] border backdrop-blur-md ${
+                isLight 
+                  ? "bg-slate-100 border-slate-200 text-blue-600 font-semibold" 
+                  : "bg-white/[0.08] border-white/10 text-cyan-300"
+              }`}>
+                {isLight ? "LIGHT" : "PITCH BLACK"}
               </span>
             </div>
           </div>
@@ -727,17 +823,45 @@ export default function App() {
           {/* Action HUD Controls */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             
+            {/* THEME SWITCHER (PITCH BLACK / LIGHT) */}
+            <button
+              onClick={toggleTheme}
+              className={`flex items-center gap-1 sm:gap-1.5 rounded-xl border px-2 sm:px-2.5 py-1 font-mono text-[11px] sm:text-xs transition active:scale-95 shadow-xs backdrop-blur-xl ${
+                isLight
+                  ? "border-amber-400/40 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 font-semibold"
+                  : "border-white/10 bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 hover:text-white"
+              }`}
+              title={`Toggle Theme (Currently: ${isLight ? "Light Mode" : "Pitch Black Mode"})`}
+            >
+              {isLight ? <Sun size={13} className="text-amber-500" /> : <Moon size={13} className="text-cyan-400" />}
+              <span className="font-medium uppercase">
+                {isLight ? (
+                  <>
+                    <span className="hidden sm:inline">THEME: </span>LIGHT
+                  </>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">THEME: </span>BLACK
+                  </>
+                )}
+              </span>
+            </button>
+
             {/* HANDS-FREE CONTINUOUS CONVERSATION TOGGLE */}
             <button
               onClick={toggleAutoVoiceMode}
               className={`flex items-center gap-1 sm:gap-1.5 rounded-xl border px-2 sm:px-2.5 py-1 font-mono text-[11px] sm:text-xs transition active:scale-95 backdrop-blur-xl ${
                 autoVoiceMode
-                  ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.25)] animate-pulse font-semibold"
-                  : "border-white/10 bg-white/[0.04] text-slate-400 hover:border-white/20 hover:text-slate-200"
+                  ? (isLight
+                      ? "border-emerald-500/70 bg-emerald-50 text-emerald-700 shadow-xs font-semibold animate-pulse"
+                      : "border-emerald-400/60 bg-emerald-500/20 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.25)] animate-pulse font-semibold")
+                  : (isLight
+                      ? "border-slate-200 bg-slate-100/80 text-slate-600 hover:bg-slate-200"
+                      : "border-white/10 bg-white/[0.04] text-slate-400 hover:border-white/20 hover:text-slate-200")
               }`}
               title="Continuous Hands-Free Conversation: Speak anytime without clicking the mic button"
             >
-              <Radio size={13} className={autoVoiceMode ? "text-emerald-400 animate-ping" : "text-slate-500"} />
+              <Radio size={13} className={autoVoiceMode ? "text-emerald-500 animate-ping" : (isLight ? "text-slate-400" : "text-slate-500")} />
               <span className="font-medium uppercase">
                 {autoVoiceMode ? (
                   <>
@@ -754,10 +878,14 @@ export default function App() {
             {/* MANUAL VOICE GENDER SWITCHER: FEMALE (FRIDAY) / MALE (JARVIS) */}
             <button
               onClick={toggleVoiceGender}
-              className="flex items-center gap-1 sm:gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-slate-200 hover:text-white px-2 sm:px-2.5 py-1 font-mono text-[11px] sm:text-xs transition active:scale-95 shadow-sm backdrop-blur-xl"
+              className={`flex items-center gap-1 sm:gap-1.5 rounded-xl border px-2 sm:px-2.5 py-1 font-mono text-[11px] sm:text-xs transition active:scale-95 shadow-xs backdrop-blur-xl ${
+                isLight
+                  ? "border-slate-200 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700"
+                  : "border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-slate-200 hover:text-white shadow-sm"
+              }`}
               title="Click to toggle between Female & Male Voice"
             >
-              <Sparkles size={13} className="text-cyan-400" />
+              <Sparkles size={13} className={isLight ? "text-blue-600" : "text-cyan-400"} />
               <span className="font-medium uppercase">
                 {voiceGender === "female" ? (
                   <>
@@ -772,7 +900,9 @@ export default function App() {
             </button>
 
             {/* Language Switcher */}
-            <div className="flex items-center rounded-xl border border-white/10 bg-white/[0.04] p-0.5 font-mono text-[11px] sm:text-xs backdrop-blur-xl">
+            <div className={`flex items-center rounded-xl border p-0.5 font-mono text-[11px] sm:text-xs backdrop-blur-xl ${
+              isLight ? "border-slate-200 bg-slate-100/80" : "border-white/10 bg-white/[0.04]"
+            }`}>
               <button
                 onClick={() => {
                   setLanguage("en");
@@ -780,8 +910,8 @@ export default function App() {
                 }}
                 className={`rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 transition ${
                   language === "en"
-                    ? "bg-white/20 text-white font-semibold shadow-sm"
-                    : "text-slate-400 hover:text-white"
+                    ? (isLight ? "bg-white text-slate-900 font-semibold shadow-xs" : "bg-white/20 text-white font-semibold shadow-sm")
+                    : (isLight ? "text-slate-500 hover:text-slate-900" : "text-slate-400 hover:text-white")
                 }`}
               >
                 EN
@@ -793,8 +923,8 @@ export default function App() {
                 }}
                 className={`rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 transition ${
                   language === "te"
-                    ? "bg-white/20 text-white font-semibold shadow-sm"
-                    : "text-slate-400 hover:text-white"
+                    ? (isLight ? "bg-white text-slate-900 font-semibold shadow-xs" : "bg-white/20 text-white font-semibold shadow-sm")
+                    : (isLight ? "text-slate-500 hover:text-slate-900" : "text-slate-400 hover:text-white")
                 }`}
               >
                 TE
@@ -811,8 +941,8 @@ export default function App() {
               }}
               className={`flex items-center rounded-xl border p-1.5 sm:px-2 sm:py-1 font-mono text-xs transition backdrop-blur-xl ${
                 soundEnabled
-                  ? "border-white/15 bg-white/10 text-white"
-                  : "border-white/10 bg-white/[0.03] text-slate-500"
+                  ? (isLight ? "border-slate-200 bg-slate-100/90 text-slate-800" : "border-white/15 bg-white/10 text-white")
+                  : (isLight ? "border-slate-200 bg-transparent text-slate-400" : "border-white/10 bg-white/[0.03] text-slate-500")
               }`}
               title={soundEnabled ? "Mute Voice" : "Unmute Voice"}
             >
@@ -826,7 +956,7 @@ export default function App() {
         <div className="relative flex min-h-0 flex-1 overflow-hidden bg-transparent">
           
           {/* 4-DIMENSIONAL ROTATING HOLOGRAPHIC DIAGRAM BACKGROUND */}
-          <FourDimensionalDiagram state={status} audioLevel={audioLevel} />
+          <FourDimensionalDiagram state={status} audioLevel={audioLevel} theme={theme} />
 
           {/* CHAT MESSAGES STREAM */}
           <div className="relative z-10 flex flex-1 flex-col overflow-y-auto px-3 py-4 sm:px-8 sm:py-6 max-w-4xl mx-auto w-full space-y-4 sm:space-y-6">
@@ -838,8 +968,12 @@ export default function App() {
                 <div
                   className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl border backdrop-blur-md ${
                     msg.role === "ai"
-                      ? "border-white/15 bg-white/10 text-cyan-300 shadow-[0_0_15px_rgba(56,189,248,0.2)]"
-                      : "border-blue-400/30 bg-blue-500/20 text-blue-200"
+                      ? (isLight 
+                          ? "border-slate-200 bg-white text-blue-600 shadow-xs" 
+                          : "border-white/15 bg-white/10 text-cyan-300 shadow-[0_0_15px_rgba(56,189,248,0.2)]")
+                      : (isLight
+                          ? "border-blue-400 bg-blue-600 text-white shadow-xs"
+                          : "border-blue-400/30 bg-blue-500/20 text-blue-200")
                   }`}
                 >
                   {msg.role === "ai" ? <Zap size={16} /> : <User size={16} />}
@@ -848,42 +982,62 @@ export default function App() {
                 <div
                   className={`relative group max-w-[90%] sm:max-w-[85%] rounded-2xl border px-3.5 py-2.5 sm:px-5 sm:py-3.5 backdrop-blur-xl ${
                     msg.role === "ai"
-                      ? "border-white/10 bg-white/[0.06] text-slate-100 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)]"
-                      : "border-blue-400/20 bg-blue-600/15 text-slate-100 shadow-[0_8px_32px_0_rgba(0,0,0,0.2)]"
+                      ? (isLight
+                          ? "border-slate-200/90 bg-white/95 text-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.05)]"
+                          : "border-white/10 bg-zinc-950/90 text-slate-100 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)]")
+                      : (isLight
+                          ? "border-blue-500 bg-blue-600 text-white shadow-sm"
+                          : "border-zinc-700/60 bg-zinc-900/90 text-white shadow-[0_8px_32px_0_rgba(0,0,0,0.8)]")
                   }`}
                 >
-                  <div className="mb-1.5 flex items-center justify-between gap-3 font-mono text-[10px] sm:text-[11px] text-slate-400 border-b border-white/5 pb-1">
-                    <span className={`font-semibold uppercase tracking-wider ${msg.role === "ai" ? "text-cyan-300" : "text-blue-300"}`}>
+                  <div className={`mb-1.5 flex items-center justify-between gap-3 font-mono text-[10px] sm:text-[11px] pb-1 border-b ${
+                    isLight ? "border-slate-200/60 text-slate-400" : "border-white/5 text-slate-400"
+                  }`}>
+                    <span className={`font-semibold uppercase tracking-wider ${
+                      msg.role === "ai"
+                        ? (isLight ? "text-blue-600" : "text-cyan-300")
+                        : (isLight ? "text-blue-100" : "text-blue-300")
+                    }`}>
                       {msg.role === "ai" ? "F.R.I.D.A.Y." : userName || "USER"}
                     </span>
                     <div className="flex items-center gap-2 sm:gap-3">
                       <span>{msg.timestamp}</span>
                       <button
                         onClick={() => copyText(msg.text, msg.id)}
-                        className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 hover:text-white transition"
+                        className={`opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition ${
+                          isLight ? "hover:text-slate-900" : "hover:text-white"
+                        }`}
                         title="Copy text"
                       >
-                        {copiedId === msg.id ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                        {copiedId === msg.id ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
                       </button>
                     </div>
                   </div>
 
-                  <div className="whitespace-pre-wrap leading-relaxed text-xs sm:text-[14.5px] font-sans selection:bg-cyan-500/25">
+                  <div className={`whitespace-pre-wrap leading-relaxed text-xs sm:text-[14.5px] font-sans ${
+                    msg.role === "user" && isLight ? "selection:bg-white/30" : "selection:bg-cyan-500/25"
+                  }`}>
                     {msg.text}
                   </div>
 
                   {msg.actionUrl && (
-                    <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between gap-2">
+                    <div className={`mt-3 pt-2.5 border-t flex items-center justify-between gap-2 ${
+                      isLight ? "border-slate-200/60" : "border-white/10"
+                    }`}>
                       <a
                         href={msg.actionUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-1.5 font-mono text-xs text-white font-medium shadow-sm transition active:scale-95 backdrop-blur-md"
+                        className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 font-mono text-xs font-medium shadow-xs transition active:scale-95 backdrop-blur-md ${
+                          isLight
+                            ? "bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200"
+                            : "bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+                        }`}
                       >
                         <span>Open {msg.appName || "App"}</span>
                         <ExternalLink size={13} />
                       </a>
-                      <span className="text-[10px] font-mono text-slate-400">Glass Deep-Link</span>
+                      <span className={`text-[10px] font-mono ${isLight ? "text-slate-400" : "text-slate-400"}`}>Deep-Link</span>
                     </div>
                   )}
                 </div>
@@ -892,15 +1046,21 @@ export default function App() {
 
             {status === "thinking" && (
               <div className="flex gap-2.5 sm:gap-4 items-center">
-                <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-cyan-300 animate-pulse backdrop-blur-md">
+                <div className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl border animate-pulse backdrop-blur-md ${
+                  isLight ? "border-slate-200 bg-white text-blue-600 shadow-xs" : "border-white/15 bg-white/10 text-cyan-300"
+                }`}>
                   <Cpu size={16} />
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-xl px-4 py-2.5 sm:px-5 sm:py-3 text-[11px] sm:text-xs font-mono text-slate-300 flex items-center gap-2 sm:gap-3 shadow-[0_8px_32px_0_rgba(0,0,0,0.2)]">
+                <div className={`rounded-2xl border backdrop-blur-xl px-4 py-2.5 sm:px-5 sm:py-3 text-[11px] sm:text-xs font-mono flex items-center gap-2 sm:gap-3 ${
+                  isLight
+                    ? "border-slate-200 bg-white/95 text-slate-700 shadow-xs"
+                    : "border-white/10 bg-zinc-950/90 text-slate-300 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)]"
+                }`}>
                   <span>PROCESSING</span>
                   <span className="flex gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-bounce" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.2s]" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.4s]" />
+                    <span className={`h-1.5 w-1.5 rounded-full animate-bounce ${isLight ? "bg-blue-600" : "bg-cyan-400"}`} />
+                    <span className={`h-1.5 w-1.5 rounded-full animate-bounce [animation-delay:0.2s] ${isLight ? "bg-blue-600" : "bg-cyan-400"}`} />
+                    <span className={`h-1.5 w-1.5 rounded-full animate-bounce [animation-delay:0.4s] ${isLight ? "bg-blue-600" : "bg-cyan-400"}`} />
                   </span>
                 </div>
               </div>
@@ -910,22 +1070,32 @@ export default function App() {
           </div>
         </div>
 
-        {/* BOTTOM COMMAND DOCK WITH OPTIMIZED HARMONIC WAVE */}
-        <div className="relative z-20 border-t border-white/10 bg-slate-950/40 p-2 sm:p-3 sm:px-8 backdrop-blur-2xl pb-[max(0.75rem,env(safe-area-inset-bottom))] shrink-0">
+        {/* BOTTOM COMMAND DOCK WITH ADAPTIVE WAVE VISUALIZER */}
+        <div className={`relative z-20 p-2 sm:p-3 sm:px-8 backdrop-blur-2xl pb-[max(0.75rem,env(safe-area-inset-bottom))] shrink-0 border-t ${
+          isLight ? "border-slate-200 bg-white/85" : "border-white/10 bg-black/90"
+        }`}>
           <div className="max-w-4xl mx-auto space-y-1.5 sm:space-y-2">
             
-            {/* Hands-Free Mode Glowing Status Ribbon */}
+            {/* Hands-Free Mode Status Ribbon */}
             {autoVoiceMode && (
-              <div className="flex items-center justify-between gap-2 rounded-xl bg-emerald-500/15 border border-emerald-400/30 px-3 py-1.5 font-mono text-[11px] text-emerald-300 shadow-[0_4px_20px_rgba(16,185,129,0.15)] backdrop-blur-xl animate-pulse">
+              <div className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-1.5 font-mono text-[11px] backdrop-blur-xl animate-pulse ${
+                isLight
+                  ? "bg-emerald-50 border-emerald-300 text-emerald-800 shadow-xs"
+                  : "bg-emerald-500/15 border-emerald-400/30 text-emerald-300 shadow-[0_4px_20px_rgba(16,185,129,0.15)]"
+              }`}>
                 <div className="flex items-center gap-2 truncate">
-                  <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500 animate-ping" />
                   <span className="font-medium tracking-wide truncate">
                     HANDS-FREE ACTIVE // SPEAK NATURALLY WITHOUT CLICKING
                   </span>
                 </div>
                 <button
                   onClick={toggleAutoVoiceMode}
-                  className="shrink-0 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 px-2 py-0.5 text-[10px] text-emerald-200 transition border border-emerald-400/30 font-medium"
+                  className={`shrink-0 rounded-lg px-2 py-0.5 text-[10px] transition border font-medium ${
+                    isLight
+                      ? "bg-white hover:bg-emerald-100 text-emerald-800 border-emerald-300 shadow-xs"
+                      : "bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border-emerald-400/30"
+                  }`}
                   title="Pause Hands-Free Voice Mode"
                 >
                   PAUSE
@@ -933,19 +1103,27 @@ export default function App() {
               </div>
             )}
 
-            <ArcWave state={status} audioLevel={audioLevel} />
+            <ArcWave state={status} audioLevel={audioLevel} theme={theme} />
 
             {/* Input Bar */}
-            <div className="relative flex items-center gap-1.5 sm:gap-2 rounded-2xl border border-white/15 bg-white/[0.05] p-1.5 sm:p-2 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.25)]">
+            <div className={`relative flex items-center gap-1.5 sm:gap-2 rounded-2xl border p-1.5 sm:p-2 backdrop-blur-2xl ${
+              isLight
+                ? "border-slate-300 bg-white/95 shadow-[0_4px_24px_rgba(0,0,0,0.06)]"
+                : "border-white/15 bg-zinc-950/90 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)]"
+            }`}>
               {/* Mic Button */}
               <button
                 onClick={autoVoiceMode ? toggleAutoVoiceMode : toggleListening}
                 className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl border transition-all active:scale-95 backdrop-blur-md ${
                   autoVoiceMode
-                    ? "border-emerald-400/60 bg-emerald-500/25 text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.35)] animate-pulse"
+                    ? (isLight
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-xs animate-pulse"
+                        : "border-emerald-400/60 bg-emerald-500/25 text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.35)] animate-pulse")
                     : status === "listening"
                     ? "border-red-400/50 bg-red-500/30 text-red-200 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.4)]"
-                    : "border-white/15 bg-white/[0.08] text-white/80 hover:border-white/30 hover:bg-white/[0.14] hover:text-white"
+                    : (isLight
+                        ? "border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        : "border-white/15 bg-white/[0.08] text-white/80 hover:border-white/30 hover:bg-white/[0.14] hover:text-white")
                 }`}
                 title={
                   autoVoiceMode
@@ -958,7 +1136,7 @@ export default function App() {
                 {status === "listening" || autoVoiceMode ? <MicOff size={18} /> : <Mic size={18} />}
               </button>
 
-              {/* Text Input (16px base font size avoids unwanted iOS Safari zooming) */}
+              {/* Text Input */}
               <input
                 type="text"
                 value={input}
@@ -971,14 +1149,20 @@ export default function App() {
                     ? (language === "te" ? "వాయిస్ వింటున్నాను... మాట్లాడండి..." : "Listening to your voice... speak now")
                     : (language === "te" ? `ఫ్రైడేను అడగండి, ${userName || "గారు"}...` : `Ask Friday anything, ${userName || "..."}`)
                 }
-                className="flex-1 bg-transparent px-2.5 sm:px-3 text-base sm:text-sm text-white placeholder-white/40 focus:outline-none font-sans"
+                className={`flex-1 bg-transparent px-2.5 sm:px-3 text-base sm:text-sm focus:outline-none font-sans ${
+                  isLight ? "text-slate-900 placeholder-slate-400" : "text-white placeholder-white/40"
+                }`}
               />
 
               {/* Send Button */}
               <button
                 onClick={() => handleSend()}
                 disabled={!input.trim() || status === "thinking"}
-                className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white font-medium transition active:scale-95 disabled:opacity-20 disabled:hover:bg-white/15 shadow-sm backdrop-blur-md"
+                className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl font-medium transition active:scale-95 disabled:opacity-25 shadow-xs backdrop-blur-md ${
+                  isLight
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "bg-white/15 hover:bg-white/25 border border-white/20 text-white"
+                }`}
               >
                 <Send size={16} />
               </button>
@@ -989,19 +1173,33 @@ export default function App() {
 
       {/* IDENTITY PROTOCOL MODAL */}
       {showNameModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xl p-4">
+        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-xl ${
+          isLight ? "bg-slate-900/40" : "bg-black/85"
+        }`}>
           <form 
             onSubmit={handleSaveName}
-            className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-900/80 backdrop-blur-2xl p-6 sm:p-7 shadow-[0_16px_48px_0_rgba(0,0,0,0.5)] text-center"
+            className={`w-full max-w-md rounded-2xl border p-6 sm:p-7 text-center backdrop-blur-2xl shadow-2xl ${
+              isLight
+                ? "bg-white/95 border-slate-200 text-slate-900"
+                : "bg-zinc-950/95 border-white/15 text-white"
+            }`}
           >
-            <div className="mx-auto mb-4 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-cyan-300 shadow-[0_0_20px_rgba(56,189,248,0.2)] backdrop-blur-md">
+            <div className={`mx-auto mb-4 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl border backdrop-blur-md ${
+              isLight 
+                ? "border-blue-200 bg-blue-50 text-blue-600 shadow-xs" 
+                : "border-white/15 bg-white/10 text-cyan-300 shadow-[0_0_20px_rgba(56,189,248,0.2)]"
+            }`}>
               <Zap size={26} />
             </div>
 
-            <h3 className="font-mono text-lg sm:text-xl font-bold text-white mb-1 tracking-wider">
+            <h3 className={`font-mono text-lg sm:text-xl font-bold mb-1 tracking-wider ${
+              isLight ? "text-slate-900" : "text-white"
+            }`}>
               USER PROFILE
             </h3>
-            <p className="text-xs text-slate-400 mb-5 font-sans leading-relaxed">
+            <p className={`text-xs mb-5 font-sans leading-relaxed ${
+              isLight ? "text-slate-500" : "text-slate-400"
+            }`}>
               Personalize your name to calibrate F.R.I.D.A.Y.'s voice synthesis and conversational responses.
             </p>
 
@@ -1011,12 +1209,20 @@ export default function App() {
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
               placeholder="Enter your name (e.g. Bharath)"
-              className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-4 py-3 font-mono text-center text-white placeholder-white/30 focus:border-white/35 focus:outline-none mb-5 text-base backdrop-blur-md"
+              className={`w-full rounded-xl border px-4 py-3 font-mono text-center mb-5 text-base backdrop-blur-md focus:outline-none ${
+                isLight
+                  ? "border-slate-300 bg-slate-50 text-slate-900 placeholder-slate-400 focus:border-blue-500"
+                  : "border-white/15 bg-white/[0.06] text-white placeholder-white/30 focus:border-white/35"
+              }`}
             />
 
             <button
               type="submit"
-              className="w-full rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 py-3 font-mono text-xs font-semibold tracking-wider text-white shadow-sm active:scale-[0.98] transition backdrop-blur-md"
+              className={`w-full rounded-xl py-3 font-mono text-xs font-semibold tracking-wider transition active:scale-[0.98] shadow-xs ${
+                isLight
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "bg-white/15 hover:bg-white/25 border border-white/25 text-white shadow-sm"
+              }`}
             >
               SAVE & INITIALIZE
             </button>
